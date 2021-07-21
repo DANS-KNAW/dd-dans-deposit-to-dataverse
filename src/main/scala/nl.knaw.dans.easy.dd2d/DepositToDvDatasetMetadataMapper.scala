@@ -71,7 +71,8 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
       addCompoundFieldMultipleValues(citationFields, DESCRIPTION, ddm \ "profile" \ "description", Description toDescriptionValueObject)
       addCompoundFieldMultipleValues(citationFields, DESCRIPTION, if (alternativeTitles.isEmpty) NodeSeq.Empty
                                                                   else alternativeTitles.tail, Description toDescriptionValueObject)
-      val otherDescriptions = (ddm \ "dcmiMetadata" \ "date") ++
+      val otherDescriptions = (ddm \ "dcmiMetadata" \ "description") ++
+        (ddm \ "dcmiMetadata" \ "date") ++
         (ddm \ "dcmiMetadata" \ "dateAccepted") ++
         (ddm \ "dcmiMetadata" \ "dateCopyrighted ") ++
         (ddm \ "dcmiMetadata" \ "dateSubmitted") ++
@@ -115,7 +116,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
     }
 
     if (activeMetadataBlocks.contains("dansRelationMetadata")) {
-      addPrimitiveFieldMultipleValues(relationFields, AUDIENCE , ddm \ "profile" \ "audience", Audience toNarcisTerm)
+      addPrimitiveFieldMultipleValues(relationFields, AUDIENCE, ddm \ "profile" \ "audience", Audience toNarcisTerm)
       addPrimitiveFieldMultipleValues(relationFields, COLLECTION, ddm \ "dcmiMetadata" \ "inCollection", InCollection toCollection)
       addCompoundFieldMultipleValues(relationFields, RELATION, (ddm \ "dcmiMetadata" \ "_").filter(Relation isRelation), Relation toRelationValueObject)
     }
