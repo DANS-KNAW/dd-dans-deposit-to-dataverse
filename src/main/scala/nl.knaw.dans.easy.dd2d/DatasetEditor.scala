@@ -23,12 +23,14 @@ import nl.knaw.dans.lib.dataverse.model.file.prestaged.PrestagedFile
 import nl.knaw.dans.lib.error.TraversableTryExtensions
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
+import java.nio.file.{ Path, Paths }
+import java.util.regex.Pattern
 import scala.util.{ Success, Try }
 
 /**
  * Object that edits a dataset, a new draft.
  */
-abstract class DatasetEditor(instance: DataverseInstance) extends DebugEnhancedLogging {
+abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPattern: Option[Pattern]) extends DebugEnhancedLogging {
   type PersistendId = String
   type DatasetId = Int
 
@@ -65,6 +67,24 @@ abstract class DatasetEditor(instance: DataverseInstance) extends DebugEnhancedL
       _ <- instance.dataset(doi).awaitUnlock()
     } yield id
     result.map(_.getOrElse(throw new IllegalStateException("Could not get DataFile ID from response")))
+  }
+
+  protected def getPathToFileInfo(deposit: Deposit): Try[Map[Path, FileInfo]] = {
+    for {
+      bagPathToFileInfo <- deposit.getPathToFileInfo
+      pathToFileInfo = bagPathToFileInfo.map { case (bagPath, fileInfo) => (Paths.get("data").relativize(bagPath) -> fileInfo) }
+      filteredPathToFileInfo = excludeFiles(pathToFileInfo)
+    } yield filteredPathToFileInfo
+  }
+
+  private def excludeFiles(p2fi: Map[Path, FileInfo]): Map[Path, FileInfo] = {
+    trace(p2fi)
+    p2fi.toList.filter {
+      case (p, _) =>
+        val foundMatch = optFileExclusionPattern.forall(_.matcher(p.toString).matches())
+        if (foundMatch) logger.info(s"Excluding file: ${ p.toString }")
+        !foundMatch
+    }.toMap
   }
 
   protected def getPrestagedFileFor(fileInfo: FileInfo, basicFileMetas: Set[BasicFileMeta]): Option[PrestagedFile] = {

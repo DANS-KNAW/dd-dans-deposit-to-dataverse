@@ -24,13 +24,15 @@ import nl.knaw.dans.lib.error.TraversableTryExtensions
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
 import java.nio.file.{ Path, Paths }
+import java.util.regex.Pattern
 import scala.util.{ Failure, Success, Try }
 
 class DatasetUpdater(deposit: Deposit,
+                     optFileExclusionPattern: Option[Pattern],
                      isMigration: Boolean = false,
                      metadataBlocks: MetadataBlocks,
                      instance: DataverseInstance,
-                     optMigrationInfoService: Option[MigrationInfo]) extends DatasetEditor(instance) with DebugEnhancedLogging {
+                     optMigrationInfoService: Option[MigrationInfo]) extends DatasetEditor(instance, optFileExclusionPattern) with DebugEnhancedLogging {
   trace(deposit)
 
   override def performEdit(): Try[PersistendId] = {
@@ -47,8 +49,7 @@ class DatasetUpdater(deposit: Deposit,
       _ <- dataset.awaitUnlock()
       _ <- dataset.updateMetadata(metadataBlocks)
       _ <- dataset.awaitUnlock()
-      bagPathToFileInfo <- deposit.getPathToFileInfo
-      pathToFileInfo = bagPathToFileInfo.map { case (bagPath, fileInfo) => (Paths.get("data").relativize(bagPath) -> fileInfo) }
+      pathToFileInfo <- getPathToFileInfo(deposit)
       _ = debug(s"pathToFileInfo = $pathToFileInfo")
       pathToFileMetaInLatestVersion <- getFilesInLatestVersion(dataset)
       _ = debug(s"pathToFileMetaInLatestVersion = $pathToFileMetaInLatestVersion")

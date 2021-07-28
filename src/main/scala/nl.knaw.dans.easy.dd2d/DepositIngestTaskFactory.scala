@@ -20,6 +20,7 @@ import nl.knaw.dans.easy.dd2d.dansbag.DansBagValidator
 import nl.knaw.dans.easy.dd2d.migrationinfo.MigrationInfo
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 
+import java.util.regex.Pattern
 import scala.xml.Elem
 
 /**
@@ -38,6 +39,7 @@ import scala.xml.Elem
  * @param outboxDir                                    outbox
  */
 class DepositIngestTaskFactory(isMigrated: Boolean = false,
+                               optFileExclusionPattern: Option[Pattern],
                                activeMetadataBlocks: List[String],
                                optDansBagValidator: Option[DansBagValidator],
                                instance: DataverseInstance,
@@ -53,6 +55,7 @@ class DepositIngestTaskFactory(isMigrated: Boolean = false,
   def createDepositIngestTask(deposit: Deposit): DepositIngestTask = {
     if (isMigrated)
       new DepositMigrationTask(deposit,
+        optFileExclusionPattern,
         activeMetadataBlocks,
         optDansBagValidator,
         instance,
@@ -67,6 +70,7 @@ class DepositIngestTaskFactory(isMigrated: Boolean = false,
     else
       DepositIngestTask(
         deposit,
+        optFileExclusionPattern,
         activeMetadataBlocks,
         optDansBagValidator,
         instance,
