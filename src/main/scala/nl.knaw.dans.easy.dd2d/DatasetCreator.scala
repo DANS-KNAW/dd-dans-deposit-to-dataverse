@@ -21,13 +21,15 @@ import nl.knaw.dans.lib.dataverse.model.{ DefaultRole, RoleAssignment }
 import nl.knaw.dans.lib.dataverse.{ DataverseInstance, DataverseResponse }
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
+import java.util.regex.Pattern
 import scala.util.{ Success, Try }
 
 class DatasetCreator(deposit: Deposit,
+                     optFileExclusionPattern: Option[Pattern],
                      isMigration: Boolean = false,
                      dataverseDataset: Dataset,
                      instance: DataverseInstance,
-                     optMigrationInfoService: Option[MigrationInfo]) extends DatasetEditor(instance) with DebugEnhancedLogging {
+                     optMigrationInfoService: Option[MigrationInfo]) extends DatasetEditor(instance, optFileExclusionPattern) with DebugEnhancedLogging {
   trace(deposit)
 
   override def performEdit(): Try[PersistendId] = {
@@ -39,9 +41,9 @@ class DatasetCreator(deposit: Deposit,
                       .importDataset(dataverseDataset, Some(s"doi:${ deposit.doi }"), autoPublish = false)
                   else instance.dataverse("root").createDataset(dataverseDataset)
       persistentId <- getPersistentId(response)
-      fileInfos <- deposit.getPathToFileInfo
+      pathToFileInfo <- getPathToFileInfo(deposit)
       prestagedFiles <- optMigrationInfoService.map(_.getPrestagedDataFilesFor(s"doi:${ deposit.doi }", 1)).getOrElse(Success(Set.empty[BasicFileMeta]))
-      databaseIdsToFileInfo <- addFiles(persistentId, fileInfos.values.toList, prestagedFiles)
+      databaseIdsToFileInfo <- addFiles(persistentId, pathToFileInfo.values.toList, prestagedFiles)
       _ <- updateFileMetadata(databaseIdsToFileInfo.mapValues(_.metadata))
       _ <- instance.dataset(persistentId).awaitUnlock()
       _ <- configureEnableAccessRequests(deposit, persistentId, canEnable = true)

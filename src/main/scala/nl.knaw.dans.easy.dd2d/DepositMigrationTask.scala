@@ -22,11 +22,13 @@ import nl.knaw.dans.easy.dd2d.migrationinfo.MigrationInfo
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.dataverse.model.dataset.Dataset
 
+import java.util.regex.Pattern
 import scala.language.postfixOps
 import scala.util.{ Failure, Success, Try }
 import scala.xml.{ Elem, Node }
 
 class DepositMigrationTask(deposit: Deposit,
+                           optFileExclusionPattern: Option[Pattern],
                            activeMetadataBlocks: List[String],
                            optDansBagValidator: Option[DansBagValidator],
                            instance: DataverseInstance,
@@ -39,6 +41,7 @@ class DepositMigrationTask(deposit: Deposit,
                            repordIdToTerm: Map[String, String],
                            outboxDir: File)
   extends DepositIngestTask(deposit,
+    optFileExclusionPattern,
     activeMetadataBlocks,
     optDansBagValidator,
     instance,
@@ -60,11 +63,11 @@ class DepositMigrationTask(deposit: Deposit,
   }
 
   override def newDatasetUpdater(dataverseDataset: Dataset): DatasetUpdater = {
-    new DatasetUpdater(deposit, isMigration = true, dataverseDataset.datasetVersion.metadataBlocks, instance, migrationInfo)
+    new DatasetUpdater(deposit, optFileExclusionPattern, isMigration = true, dataverseDataset.datasetVersion.metadataBlocks, instance, migrationInfo)
   }
 
   override def newDatasetCreator(dataverseDataset: Dataset): DatasetCreator = {
-    new DatasetCreator(deposit, isMigration = true, dataverseDataset, instance, migrationInfo)
+    new DatasetCreator(deposit, optFileExclusionPattern, isMigration = true, dataverseDataset, instance, migrationInfo)
   }
 
   override protected def getDateOfDeposit: Try[Option[String]] = {

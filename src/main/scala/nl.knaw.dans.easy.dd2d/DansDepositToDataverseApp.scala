@@ -38,6 +38,7 @@ class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhan
     new InboxWatcher(new Inbox(configuration.inboxDir,
       new DepositIngestTaskFactory(
         isMigrated = false,
+        configuration.optFileExclusionPattern,
         getActiveMetadataBlocks.get,
         Option(dansBagValidator),
         dataverse,
@@ -68,6 +69,7 @@ class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhan
       _ <- new SingleDepositProcessor(deposit,
         new DepositIngestTaskFactory(
           isMigrated = true,
+          configuration.optFileExclusionPattern,
           getActiveMetadataBlocks.get,
           if (skipValidation) Option.empty
           else Option(dansBagValidator),
@@ -91,6 +93,7 @@ class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhan
       _ <- new InboxProcessor(new Inbox(inbox,
         new DepositIngestTaskFactory(
           isMigrated = true,
+          configuration.optFileExclusionPattern,
           getActiveMetadataBlocks.get,
           if (skipValidation) Option.empty
           else Option(dansBagValidator),

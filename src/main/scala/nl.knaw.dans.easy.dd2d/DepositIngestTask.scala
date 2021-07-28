@@ -30,6 +30,7 @@ import org.json4s.native.Serialization
 import org.json4s.{ DefaultFormats, Formats }
 
 import java.lang.Thread.sleep
+import java.util.regex.Pattern
 import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
 import scala.util.control.NonFatal
@@ -43,6 +44,7 @@ import scala.xml.Elem
  * @param instance the Dataverse instance to ingest in
  */
 case class DepositIngestTask(deposit: Deposit,
+                             optFileExclusionPattern: Option[Pattern],
                              activeMetadataBlocks: List[String],
                              optDansBagValidator: Option[DansBagValidator],
                              instance: DataverseInstance,
@@ -168,11 +170,11 @@ case class DepositIngestTask(deposit: Deposit,
   }
 
   protected def newDatasetUpdater(dataverseDataset: Dataset): DatasetUpdater = {
-    new DatasetUpdater(deposit, isMigration = false, dataverseDataset.datasetVersion.metadataBlocks, instance, Option.empty)
+    new DatasetUpdater(deposit, optFileExclusionPattern, isMigration = false, dataverseDataset.datasetVersion.metadataBlocks, instance, Option.empty)
   }
 
   protected def newDatasetCreator(dataverseDataset: Dataset): DatasetCreator = {
-    new DatasetCreator(deposit, isMigration = false, dataverseDataset, instance, Option.empty)
+    new DatasetCreator(deposit, optFileExclusionPattern, isMigration = false, dataverseDataset, instance, Option.empty)
   }
 
   protected def publishDataset(persistentId: String): Try[Unit] = {

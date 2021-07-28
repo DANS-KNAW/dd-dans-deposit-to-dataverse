@@ -25,6 +25,7 @@ import org.apache.commons.csv.{ CSVFormat, CSVParser }
 import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.nio.file.{ Path, Paths }
+import java.util.regex.Pattern
 import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.util.Try
 import scala.xml.{ Elem, XML }
@@ -32,6 +33,7 @@ import scala.xml.{ Elem, XML }
 case class Configuration(version: String,
                          inboxDir: File,
                          outboxDir: Path,
+                         optFileExclusionPattern: Option[Pattern],
                          validatorServiceUrl: URI,
                          validatorConnectionTimeoutMs: Int,
                          validatorReadTimeoutMs: Int,
@@ -76,6 +78,7 @@ object Configuration {
       version = (home / "bin" / "version").contentAsString.stripLineEnd,
       inboxDir = File(properties.getString("deposits.inbox")),
       outboxDir = Paths.get(properties.getString("deposits.outbox")),
+      optFileExclusionPattern = Option(properties.getString("deposits.file-exclusion-pattern")).map(Pattern.compile),
       validatorServiceUrl = new URI(properties.getString("validate-dans-bag.service-url")),
       validatorConnectionTimeoutMs = properties.getInt("validate-dans-bag.connection-timeout-ms"),
       validatorReadTimeoutMs = properties.getInt("validate-dans-bag.read-timeout-ms"),
