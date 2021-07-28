@@ -59,13 +59,16 @@ class DatasetUpdater(deposit: Deposit,
       prestagedFiles <- optMigrationInfoService.map(_.getPrestagedDataFilesFor(doi, numPub + 1)).getOrElse(Success(Set.empty[BasicFileMeta]))
       filesToReplace <- getFilesToReplace(pathToFileInfo, pathToFileMetaInLatestVersion)
       fileReplacements <- replaceFiles(dataset, filesToReplace, prestagedFiles)
+      _ = debug(s"fileReplacements = $fileReplacements")
 
       oldToNewPathMovedFiles <- getOldToNewPathOfFilesToMove(pathToFileMetaInLatestVersion, pathToFileInfo)
       fileMovements = oldToNewPathMovedFiles.map { case (old, newPath) => (pathToFileMetaInLatestVersion(old).dataFile.get.id, pathToFileInfo(newPath).metadata) }
       // Movement will be realized by updating label and directoryLabel attributes of the file; there is no separate "move-file" API endpoint.
+      _ = debug(s"fileMovements = $fileMovements")
 
       pathsToDelete = pathToFileMetaInLatestVersion.keySet diff pathToFileInfo.keySet diff oldToNewPathMovedFiles.keySet
       fileDeletions <- getFileDeletions(pathsToDelete, pathToFileMetaInLatestVersion)
+      _ = debug(s"fileDeletions = $fileDeletions")
       _ <- deleteFiles(dataset, fileDeletions.toList)
 
       pathsToAdd = pathToFileInfo.keySet diff pathToFileMetaInLatestVersion.keySet diff oldToNewPathMovedFiles.values.toSet
@@ -146,7 +149,13 @@ class DatasetUpdater(deposit: Deposit,
       checksumsOfPotentiallyMovedFiles = checksumsToPathNonDuplicatedFilesInDeposit.keySet intersect checksumsToPathNonDuplicatedFilesInLatestVersion.keySet
       oldToNewPathMovedFiles = checksumsOfPotentiallyMovedFiles
         .map(c => (checksumsToPathNonDuplicatedFilesInLatestVersion(c), checksumsToPathNonDuplicatedFilesInDeposit(c)))
-        .filter { case (pathInLatestVersion, pathInDeposit) => pathInLatestVersion != pathInDeposit }
+/*
+ * Work-around for a bug in Dataverse. The API seems to lose the directoryLabel when the draft of a second version is started. For now, we therefore don't filter
+ * away files that have kept the same path. They will be "moved" in place, making sure the directoryLabel is reconfirmed.
+ *
+ * For files with duplicates in the same dataset this will not work, because those are not collected above.
+ */
+//        .filter { case (pathInLatestVersion, pathInDeposit) => pathInLatestVersion != pathInDeposit }
     } yield oldToNewPathMovedFiles.toMap
   }
 
@@ -199,7 +208,7 @@ class DatasetUpdater(deposit: Deposit,
       }
       fileList <- r.data
       id = fileList.files.head.dataFile.map(_.id).getOrElse(throw new IllegalStateException("Could not get ID of replacement file after replace action"))
-      meta = fileList.files.head
-    } yield (id, meta)
+
+    } yield (id, fileInfo.metadata)
   }
 }
