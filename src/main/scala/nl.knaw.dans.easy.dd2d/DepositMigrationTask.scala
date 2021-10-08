@@ -83,7 +83,7 @@ class DepositMigrationTask(deposit: Deposit,
       optAmd <- deposit.tryOptAmd
       amd = optAmd.getOrElse(throw new Exception(s"no AMD found for $persistentId"))
       optPublicationDate <- getJsonLdPublicationdate(amd)
-      publicationDate = optPublicationDate.getOrElse(throw new Exception(s"no publication date found in AMD for $persistentId"))
+      publicationDate = optPublicationDate.getOrElse(throw new IllegalArgumentException(s"no publication date found in AMD for $persistentId"))
       _ <- instance.dataset(persistentId).releaseMigrated(publicationDate)
       _ <- instance.dataset(persistentId).awaitUnlock(
         maxNumberOfRetries = publishAwaitUnlockMaxNumberOfRetries,
