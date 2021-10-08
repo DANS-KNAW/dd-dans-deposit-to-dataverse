@@ -49,7 +49,7 @@ class DatasetCreator(deposit: Deposit,
       _ <- configureEnableAccessRequests(deposit, persistentId, canEnable = true)
       _ <- instance.dataset(persistentId).awaitUnlock()
       _ = debug(s"Assigning curator role to ${ deposit.depositorUserId }")
-      _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${ deposit.depositorUserId }", DefaultRole.curator.toString))
+      _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${ deposit.depositorUserId }", DefaultRole.contributor.toString))
       _ <- instance.dataset(persistentId).awaitUnlock()
     } yield persistentId
   }
