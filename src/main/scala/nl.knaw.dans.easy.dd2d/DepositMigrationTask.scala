@@ -81,18 +81,18 @@ class DepositMigrationTask(deposit: Deposit,
     trace(persistentId)
     for {
       optAmd <- deposit.tryOptAmd
-      optPublicationDate <- getJsonLdPublicationdate(optAmd)
-      _ <- instance.dataset(persistentId).releaseMigrated(optPublicationDate.get)
+      amd = optAmd.getOrElse(throw new Exception(s"no AMD found for $persistentId"))
+      optPublicationDate <- getJsonLdPublicationdate(amd)
+      publicationDate = optPublicationDate.getOrElse(throw new Exception(s"no publication date found in AMD for $persistentId"))
+      _ <- instance.dataset(persistentId).releaseMigrated(publicationDate)
       _ <- instance.dataset(persistentId).awaitUnlock(
         maxNumberOfRetries = publishAwaitUnlockMaxNumberOfRetries,
         waitTimeInMilliseconds = publishAwaitUnlockMillisecondsBetweenRetries)
     } yield ()
   }
 
-  private def getJsonLdPublicationdate(optAmd: Option[Node]): Try[Option[String]] = Try {
-    trace(optAmd)
-    optAmd
-      .flatMap(amd => Amd.getFirstChangeToState(amd, "PUBLISHED"))
+  private def getJsonLdPublicationdate(amd: Node): Try[Option[String]] = Try {
+    Amd.getFirstChangeToState(amd, "PUBLISHED")
       .map(d => s"""{"http://schema.org/datePublished": "$d"}""")
   }
 
