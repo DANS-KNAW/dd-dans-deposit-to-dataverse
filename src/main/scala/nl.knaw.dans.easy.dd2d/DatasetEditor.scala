@@ -15,13 +15,14 @@
  */
 package nl.knaw.dans.easy.dd2d
 
-import nl.knaw.dans.easy.dd2d.mapping.AccessRights
+import nl.knaw.dans.easy.dd2d.mapping.{ AccessRights, License }
 import nl.knaw.dans.easy.dd2d.migrationinfo.BasicFileMeta
-import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.dataverse.model.file.FileMeta
 import nl.knaw.dans.lib.dataverse.model.file.prestaged.PrestagedFile
+import nl.knaw.dans.lib.dataverse.{ DatasetApi, DataverseInstance }
 import nl.knaw.dans.lib.error.TraversableTryExtensions
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
+import org.json4s.{ DefaultFormats, Formats }
 
 import java.nio.file.{ Path, Paths }
 import java.util.regex.Pattern
@@ -113,6 +114,18 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
            else Success(())
       _ <- if (!enable) instance.accessRequests(persistendId).disable()
            else Success(())
+    } yield ()
+  }
+
+  protected def setLicense(deposit: Deposit, dataset: DatasetApi): Try[Unit] = {
+    for {
+      ddm <- deposit.tryDdm
+      optLicense = (ddm \ "dcmiMetadata" \ "license").find(License.isLicenseUri)
+      _ = if (optLicense.isEmpty) throw RejectedDepositException(deposit, "No license specified")
+          else dataset.updateMetadataFromJsonLd(
+            s"""
+               |{ "http://schema.org/license": "${ optLicense.get.text }" }
+               |""".stripMargin, replace = true)
     } yield ()
   }
 }

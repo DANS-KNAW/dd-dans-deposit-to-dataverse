@@ -49,6 +49,9 @@ class DatasetUpdater(deposit: Deposit,
       _ <- dataset.awaitUnlock()
       _ <- dataset.updateMetadata(metadataBlocks)
       _ <- dataset.awaitUnlock()
+
+      _ <- setLicense(deposit, dataset)
+      _ <- dataset.awaitUnlock()
       pathToFileInfo <- getPathToFileInfo(deposit)
       _ = debug(s"pathToFileInfo = $pathToFileInfo")
       pathToFileMetaInLatestVersion <- getFilesInLatestVersion(dataset)
@@ -78,7 +81,8 @@ class DatasetUpdater(deposit: Deposit,
       // TODO: what happens with file that only got a new description? Their MD will not be updated ??!!
       // TODO: probably just change this to: update the file md of all the files that are in the new version. Will DV show "null-replacements" in the differences view??
       _ <- updateFileMetadata(fileReplacements ++ fileMovements ++ fileAdditions)
-      _ <- instance.dataset(doi).awaitUnlock()
+      _ <- dataset.awaitUnlock()
+
       /*
        * Cannot enable requests if they were disallowed because of closed files in a previous version. However disabling is possible because a the update may add a closed file.
        */
