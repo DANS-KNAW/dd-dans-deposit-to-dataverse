@@ -41,6 +41,8 @@ class DatasetCreator(deposit: Deposit,
                       .importDataset(dataverseDataset, Some(s"doi:${ deposit.doi }"), autoPublish = false)
                   else instance.dataverse("root").createDataset(dataverseDataset)
       persistentId <- getPersistentId(response)
+      _ <- setLicense(deposit, instance.dataset(persistentId))
+      _ <- instance.dataset(persistentId).awaitUnlock()
       pathToFileInfo <- getPathToFileInfo(deposit)
       prestagedFiles <- optMigrationInfoService.map(_.getPrestagedDataFilesFor(s"doi:${ deposit.doi }", 1)).getOrElse(Success(Set.empty[BasicFileMeta]))
       databaseIdsToFileInfo <- addFiles(persistentId, pathToFileInfo.values.toList, prestagedFiles)
@@ -48,7 +50,7 @@ class DatasetCreator(deposit: Deposit,
       _ <- instance.dataset(persistentId).awaitUnlock()
       _ <- configureEnableAccessRequests(deposit, persistentId, canEnable = true)
       _ <- instance.dataset(persistentId).awaitUnlock()
-      _ = debug(s"Assigning curator role to ${ deposit.depositorUserId }")
+      _ = debug(s"Assigning contributor role to ${ deposit.depositorUserId }")
       _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${ deposit.depositorUserId }", DefaultRole.contributor.toString))
       _ <- instance.dataset(persistentId).awaitUnlock()
     } yield persistentId
