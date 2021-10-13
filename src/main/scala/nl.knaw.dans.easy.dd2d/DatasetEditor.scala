@@ -22,11 +22,10 @@ import nl.knaw.dans.lib.dataverse.model.file.prestaged.PrestagedFile
 import nl.knaw.dans.lib.dataverse.{ DatasetApi, DataverseInstance }
 import nl.knaw.dans.lib.error.TraversableTryExtensions
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
-import org.json4s.{ DefaultFormats, Formats }
 
 import java.nio.file.{ Path, Paths }
 import java.util.regex.Pattern
-import scala.util.{ Success, Try }
+import scala.util.{ Failure, Success, Try }
 
 /**
  * Object that edits a dataset, a new draft.
@@ -118,10 +117,11 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
   }
 
   protected def setLicense(deposit: Deposit, dataset: DatasetApi): Try[Unit] = {
+    trace(deposit)
     for {
       ddm <- deposit.tryDdm
       optLicense = (ddm \ "dcmiMetadata" \ "license").find(License.isLicenseUri)
-      _ = if (optLicense.isEmpty) throw RejectedDepositException(deposit, "No license specified")
+      _ <- if (optLicense.isEmpty) Failure(RejectedDepositException(deposit, "No license specified"))
           else dataset.updateMetadataFromJsonLd(
             s"""
                |{ "http://schema.org/license": "${ optLicense.get.text }" }
