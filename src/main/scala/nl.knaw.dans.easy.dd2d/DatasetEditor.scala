@@ -60,7 +60,7 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
         instance.dataset(doi).addPrestagedFile(prestagedFile)
       }.getOrElse {
         debug(s"Uploading file: $fileInfo")
-        instance.dataset(doi).addFile(Option(fileInfo.file))
+        instance.dataset(doi).addFile(Option(fileInfo.file), Option(fileInfo.metadata))
       }
       files <- r.data
       id = files.files.headOption.flatMap(_.dataFile.map(_.id))
