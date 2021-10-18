@@ -33,14 +33,14 @@ class SpatialBoxSpec extends TestSupportFixture with BlockTemporalAndSpatial {
           </gml:Envelope>
       </gml:boundedBy>
     val result = Serialization.writePretty(SpatialBox.toEasyTsmSpatialBoxValueObject(spatialBox))
-    findString(result, s"$SPATIAL_BOX_SCHEME.value") shouldBe "latitude/longitude (m)"
+    findString(result, s"$SPATIAL_BOX_SCHEME.value") shouldBe "latitude/longitude (degrees)"
     findString(result, s"$SPATIAL_BOX_NORTH.value") shouldBe "486890.494251"
     findString(result, s"$SPATIAL_BOX_EAST.value") shouldBe "91232.015554"
     findString(result, s"$SPATIAL_BOX_SOUTH.value") shouldBe "436172.485680"
     findString(result, s"$SPATIAL_BOX_WEST.value") shouldBe "121811.885272"
   }
 
-  it should "give 'RD(in m.)' as spatial box scheme" in {
+  it should "give 'RD (in m.)' as spatial box scheme" in {
     val spatialBox =
       <gml:boundedBy>
           <gml:Envelope srsName="http://www.opengis.net/def/crs/EPSG/0/28992">
@@ -49,7 +49,7 @@ class SpatialBoxSpec extends TestSupportFixture with BlockTemporalAndSpatial {
           </gml:Envelope>
       </gml:boundedBy>
     val result = Serialization.writePretty(SpatialBox.toEasyTsmSpatialBoxValueObject(spatialBox))
-    findString(result, s"$SPATIAL_BOX_SCHEME.value") shouldBe "RD(in m.)"
+    findString(result, s"$SPATIAL_BOX_SCHEME.value") shouldBe "RD (in m.)"
   }
 
   it should "throw exception when longitude latitude pair is given incorrectly" in {

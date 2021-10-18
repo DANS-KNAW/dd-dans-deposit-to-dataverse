@@ -26,8 +26,8 @@ trait Spatial {
   /** coordinate order x, y = longitude (DCX_SPATIAL_X), latitude (DCX_SPATIAL_Y) */
   val RD_SRS_NAME = "http://www.opengis.net/def/crs/EPSG/0/28992"
 
-  val RD_SCHEME = "RD(in m.)"
-  val LATLON_SCHEME = "latitude/longitude (m)"
+  val RD_SCHEME = "RD (in m.)"
+  val LATLON_SCHEME = "latitude/longitude (degrees)"
 
   case class Point(x: String, y: String)
 

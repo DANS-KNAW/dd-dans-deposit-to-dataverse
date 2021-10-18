@@ -30,18 +30,18 @@ class SpatialPointSpec extends TestSupportFixture with BlockTemporalAndSpatial {
         <Point>52.08113 4.34510</Point>
       </spatial>
     val result = Serialization.writePretty(SpatialPoint.toEasyTsmSpatialPointValueObject(spatialPoint))
-    findString(result, s"$SPATIAL_POINT_SCHEME.value") shouldBe "latitude/longitude (m)"
+    findString(result, s"$SPATIAL_POINT_SCHEME.value") shouldBe "latitude/longitude (degrees)"
     findString(result, s"$SPATIAL_POINT_X.value") shouldBe "52.08113"
     findString(result, s"$SPATIAL_POINT_Y.value") shouldBe "4.34510"
   }
 
-  it should "give 'RD(in m.)' as spatial point scheme and coordinates as integers" in {
+  it should "give 'RD (in m.)' as spatial point scheme and coordinates as integers" in {
     val spatialPoint =
       <spatial srsName="http://www.opengis.net/def/crs/EPSG/0/28992">
         <Point>469470 209942</Point>
       </spatial>
     val result = Serialization.writePretty(SpatialPoint.toEasyTsmSpatialPointValueObject(spatialPoint))
-    findString(result, s"$SPATIAL_POINT_SCHEME.value") shouldBe "RD(in m.)"
+    findString(result, s"$SPATIAL_POINT_SCHEME.value") shouldBe "RD (in m.)"
     findString(result, s"$SPATIAL_POINT_X.value") shouldBe "469470"
     findString(result, s"$SPATIAL_POINT_Y.value") shouldBe "209942"
   }
