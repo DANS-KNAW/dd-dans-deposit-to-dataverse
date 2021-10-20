@@ -66,6 +66,7 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
       id = files.files.headOption.flatMap(_.dataFile.map(_.id))
       _ <- instance.dataset(doi).awaitUnlock()
     } yield id
+    debug(s"Result = $result")
     result.map(_.getOrElse(throw new IllegalStateException("Could not get DataFile ID from response")))
   }
 
@@ -127,5 +128,19 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
                |{ "http://schema.org/license": "${ optLicense.get.text }" }
                |""".stripMargin, replace = true)
     } yield ()
+  }
+
+  protected def deleteDraft(persistentId: String): Try[PersistendId] = {
+    for {
+      r <- instance.dataset(persistentId).viewLatestVersion()
+      v <- r.data
+      _ <- if (v.latestVersion.versionState.contains("DRAFT")) {
+        for {
+          r <- instance.dataset(persistentId).deleteDraft()
+          _ = logger.info(s"Result of deleteDraft = ${ r.data }")
+        } yield ()
+      }
+           else Success(())
+    } yield persistentId
   }
 }
