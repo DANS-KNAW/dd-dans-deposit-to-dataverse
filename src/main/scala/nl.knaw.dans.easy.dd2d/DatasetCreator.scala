@@ -22,7 +22,8 @@ import nl.knaw.dans.lib.dataverse.{ DataverseInstance, DataverseResponse }
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
 import java.util.regex.Pattern
-import scala.util.{ Success, Try }
+import scala.util.control.NonFatal
+import scala.util.{ Failure, Success, Try }
 
 class DatasetCreator(deposit: Deposit,
                      optFileExclusionPattern: Option[Pattern],
@@ -33,27 +34,38 @@ class DatasetCreator(deposit: Deposit,
   trace(deposit)
 
   override def performEdit(): Try[PersistendId] = {
-    for {
-      // autoPublish is false, because it seems there is a bug with it in Dataverse (most of the time?)
-      response <- if (isMigration)
-                    instance
-                      .dataverse("root")
-                      .importDataset(dataverseDataset, Some(s"doi:${ deposit.doi }"), autoPublish = false)
-                  else instance.dataverse("root").createDataset(dataverseDataset)
-      persistentId <- getPersistentId(response)
-      _ <- setLicense(deposit, instance.dataset(persistentId))
-      _ <- instance.dataset(persistentId).awaitUnlock()
-      pathToFileInfo <- getPathToFileInfo(deposit)
-      prestagedFiles <- optMigrationInfoService.map(_.getPrestagedDataFilesFor(s"doi:${ deposit.doi }", 1)).getOrElse(Success(Set.empty[BasicFileMeta]))
-      databaseIdsToFileInfo <- addFiles(persistentId, pathToFileInfo.values.toList, prestagedFiles)
-      _ <- updateFileMetadata(databaseIdsToFileInfo.mapValues(_.metadata))
-      _ <- instance.dataset(persistentId).awaitUnlock()
-      _ <- configureEnableAccessRequests(deposit, persistentId, canEnable = true)
-      _ <- instance.dataset(persistentId).awaitUnlock()
-      _ = debug(s"Assigning contributor role to ${ deposit.depositorUserId }")
-      _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${ deposit.depositorUserId }", DefaultRole.contributor.toString))
-      _ <- instance.dataset(persistentId).awaitUnlock()
-    } yield persistentId
+    {
+      for {
+        // autoPublish is false, because it seems there is a bug with it in Dataverse (most of the time?)
+        response <- if (isMigration)
+                      instance
+                        .dataverse("root")
+                        .importDataset(dataverseDataset, Some(s"doi:${ deposit.doi }"), autoPublish = false)
+                    else instance.dataverse("root").createDataset(dataverseDataset)
+        persistentId <- getPersistentId(response)
+      } yield persistentId
+    } match {
+      case Failure(e) => Failure(FailedDepositException(deposit, "Could not import/create dataset", e))
+      case Success(persistentId) =>
+        (for {
+          _ <- setLicense(deposit, instance.dataset(persistentId))
+          _ <- instance.dataset(persistentId).awaitUnlock()
+          pathToFileInfo <- getPathToFileInfo(deposit)
+          prestagedFiles <- optMigrationInfoService.map(_.getPrestagedDataFilesFor(s"doi:${ deposit.doi }", 1)).getOrElse(Success(Set.empty[BasicFileMeta]))
+          databaseIdsToFileInfo <- addFiles(persistentId, pathToFileInfo.values.toList, prestagedFiles)
+          _ <- updateFileMetadata(databaseIdsToFileInfo.mapValues(_.metadata))
+          _ <- instance.dataset(persistentId).awaitUnlock()
+          _ <- configureEnableAccessRequests(deposit, persistentId, canEnable = true)
+          _ <- instance.dataset(persistentId).awaitUnlock()
+          _ = debug(s"Assigning contributor role to ${ deposit.depositorUserId }")
+          _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${ deposit.depositorUserId }", DefaultRole.contributor.toString))
+          _ <- instance.dataset(persistentId).awaitUnlock()
+        } yield persistentId).recoverWith {
+          case NonFatal(e) =>
+            logger.error("Dataset creation failed, deleting draft", e)
+            deleteDraftIfExists(persistentId)
+        }
+    }
   }
 
   private def getPersistentId(response: DataverseResponse[DatasetCreationResult]): Try[String] = {

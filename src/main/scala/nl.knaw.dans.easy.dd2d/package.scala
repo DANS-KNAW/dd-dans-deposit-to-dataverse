@@ -46,6 +46,9 @@ package object dd2d {
   case class FailedDepositException(deposit: Deposit, msg: String, cause: Throwable = null)
     extends Exception(s"Failed ${ deposit.dir }: $msg", cause)
 
+  case class CannotUpdateDraftDatasetException(deposit: Deposit)
+    extends Exception("Latest version must be published before update-deposit can be processed")
+
   case class InvalidDepositException(deposit: Deposit, msg: String, cause: Throwable = null)
     extends Exception(s"Not a deposit: $msg", cause)
 

@@ -66,6 +66,7 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
       id = files.files.headOption.flatMap(_.dataFile.map(_.id))
       _ <- instance.dataset(doi).awaitUnlock()
     } yield id
+    debug(s"Result = $result")
     result.map(_.getOrElse(throw new IllegalStateException("Could not get DataFile ID from response")))
   }
 
@@ -90,8 +91,8 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
   protected def getPrestagedFileFor(fileInfo: FileInfo, basicFileMetas: Set[BasicFileMeta]): Option[PrestagedFile] = {
     val matchingChecksums = basicFileMetas.filter(_.prestagedFile.checksum.`@value` == fileInfo.checksum)
     if (matchingChecksums.size == 1) Option(matchingChecksums.head.prestagedFile)
-    else if (matchingChecksums.isEmpty) Option.empty
-         else {
+    else if (matchingChecksums.isEmpty) Option.empty // no matches
+         else { // multiple matches
            val matchingPaths = basicFileMetas.filter(bfm => bfm.label == fileInfo.metadata.label.get && bfm.directoryLabel == fileInfo.metadata.directoryLabel)
            if (matchingPaths.size == 1) Option(matchingPaths.head.prestagedFile)
            else if (matchingPaths.isEmpty) Option.empty
@@ -122,10 +123,27 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
       ddm <- deposit.tryDdm
       optLicense = (ddm \ "dcmiMetadata" \ "license").find(License.isLicenseUri)
       _ <- if (optLicense.isEmpty) Failure(RejectedDepositException(deposit, "No license specified"))
-          else dataset.updateMetadataFromJsonLd(
-            s"""
-               |{ "http://schema.org/license": "${ optLicense.get.text }" }
-               |""".stripMargin, replace = true)
+           else dataset.updateMetadataFromJsonLd(
+             s"""
+                |{ "http://schema.org/license": "${ optLicense.get.text }" }
+                |""".stripMargin, replace = true)
+    } yield ()
+  }
+
+  protected def deleteDraftIfExists(persistentId: String): Try[PersistendId] = {
+    for {
+      r <- instance.dataset(persistentId).viewLatestVersion()
+      v <- r.data
+      _ <- if (v.latestVersion.versionState.contains("DRAFT"))
+             deleteDraft2(persistentId)
+           else Success(())
+    } yield persistentId
+  }
+
+  private def deleteDraft2(persistentId: PersistendId): Try[Unit] = {
+    for {
+      r <- instance.dataset(persistentId).deleteDraft()
+      _ = logger.info(s"Result of deleteDraft = ${ r.data }")
     } yield ()
   }
 }

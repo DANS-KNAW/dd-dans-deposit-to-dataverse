@@ -25,6 +25,7 @@ import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
 import java.nio.file.{ Path, Paths }
 import java.util.regex.Pattern
+import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
 class DatasetUpdater(deposit: Deposit,
@@ -36,58 +37,81 @@ class DatasetUpdater(deposit: Deposit,
   trace(deposit)
 
   override def performEdit(): Try[PersistendId] = {
+    {
+      for {
+        doi <- if (isMigration) Try { deposit.dataversePid }
+               else getDoiBySwordToken
+      } yield doi
+    } match {
+      case Failure(e) => Failure(FailedDepositException(deposit, "Could not find persistentId of existing dataset", e))
+      case Success(doi) => {
+        for {
+          dataset <- Try { instance.dataset(doi) }
+          _ <- dataset.awaitUnlock()
+          /*
+           * Temporary fix. If we do not wait a couple of seconds here, the first version never gets properly published, and the second version
+           * just overwrites it, becoming V1.
+           */
+          - <- Try { Thread.sleep(3000) }
+          _ <- dataset.awaitUnlock()
+          _ <- checkDatasetInPublishedState(dataset)
+          _ <- dataset.updateMetadata(metadataBlocks)
+          _ <- dataset.awaitUnlock()
+
+          _ <- setLicense(deposit, dataset)
+          _ <- dataset.awaitUnlock()
+          pathToFileInfo <- getPathToFileInfo(deposit)
+          _ = debug(s"pathToFileInfo = $pathToFileInfo")
+          pathToFileMetaInLatestVersion <- getFilesInLatestVersion(dataset)
+          _ = debug(s"pathToFileMetaInLatestVersion = $pathToFileMetaInLatestVersion")
+          _ <- validateFileMetas(pathToFileMetaInLatestVersion.values.toList)
+
+          numPub <- getNumberOfPublishedVersions(dataset)
+          _ = debug(s"Number of published versions so far: $numPub")
+          prestagedFiles <- optMigrationInfoService.map(_.getPrestagedDataFilesFor(doi, numPub + 1)).getOrElse(Success(Set.empty[BasicFileMeta]))
+          filesToReplace <- getFilesToReplace(pathToFileInfo, pathToFileMetaInLatestVersion)
+          fileReplacements <- replaceFiles(dataset, filesToReplace, prestagedFiles)
+          _ = debug(s"fileReplacements = $fileReplacements")
+
+          oldToNewPathMovedFiles <- getOldToNewPathOfFilesToMove(pathToFileMetaInLatestVersion, pathToFileInfo)
+          fileMovements = oldToNewPathMovedFiles.map { case (old, newPath) => (pathToFileMetaInLatestVersion(old).dataFile.get.id, pathToFileInfo(newPath).metadata) }
+          // Movement will be realized by updating label and directoryLabel attributes of the file; there is no separate "move-file" API endpoint.
+          _ = debug(s"fileMovements = $fileMovements")
+
+          pathsToDelete = pathToFileMetaInLatestVersion.keySet diff pathToFileInfo.keySet diff oldToNewPathMovedFiles.keySet
+          fileDeletions <- getFileDeletions(pathsToDelete, pathToFileMetaInLatestVersion)
+          _ = debug(s"fileDeletions = $fileDeletions")
+          _ <- deleteFiles(dataset, fileDeletions.toList)
+
+          pathsToAdd = pathToFileInfo.keySet diff pathToFileMetaInLatestVersion.keySet diff oldToNewPathMovedFiles.values.toSet
+          fileAdditions <- addFiles(doi, pathsToAdd.map(pathToFileInfo).toList, prestagedFiles).map(_.mapValues(_.metadata))
+
+          // TODO: what happens with file that only got a new description? Their MD will not be updated ??!!
+          // TODO: probably just change this to: update the file md of all the files that are in the new version. Will DV show "null-replacements" in the differences view??
+          _ <- updateFileMetadata(fileReplacements ++ fileMovements ++ fileAdditions)
+          _ <- dataset.awaitUnlock()
+
+          /*
+           * Cannot enable requests if they were disallowed because of closed files in a previous version. However disabling is possible because a the update may add a closed file.
+           */
+          _ <- configureEnableAccessRequests(deposit, doi, canEnable = false)
+        } yield doi
+      }.recoverWith {
+        case e: CannotUpdateDraftDatasetException => Failure(e) // Don't delete the draft that caused the failure
+        case NonFatal(e) =>
+          logger.error("Dataset update failed, deleting draft", e)
+          deleteDraftIfExists(doi)
+      }
+    }
+  }
+
+  private def checkDatasetInPublishedState(datasetApi: DatasetApi): Try[Unit] = {
     for {
-      doi <- if (isMigration) Try { deposit.dataversePid }
-             else getDoiBySwordToken
-      dataset = instance.dataset(doi)
-      _ <- dataset.awaitUnlock()
-      /*
-       * Temporary fix. If we do not wait a couple of seconds here, the first version never gets properly published, and the second version
-       * just overwrites it, becoming V1.
-       */
-      - <- Try { Thread.sleep(3000) }
-      _ <- dataset.awaitUnlock()
-      _ <- dataset.updateMetadata(metadataBlocks)
-      _ <- dataset.awaitUnlock()
-
-      _ <- setLicense(deposit, dataset)
-      _ <- dataset.awaitUnlock()
-      pathToFileInfo <- getPathToFileInfo(deposit)
-      _ = debug(s"pathToFileInfo = $pathToFileInfo")
-      pathToFileMetaInLatestVersion <- getFilesInLatestVersion(dataset)
-      _ = debug(s"pathToFileMetaInLatestVersion = $pathToFileMetaInLatestVersion")
-      _ <- validateFileMetas(pathToFileMetaInLatestVersion.values.toList)
-
-      numPub <- getNumberOfPublishedVersions(dataset)
-      _ = debug(s"Number of published versions so far: $numPub")
-      prestagedFiles <- optMigrationInfoService.map(_.getPrestagedDataFilesFor(doi, numPub + 1)).getOrElse(Success(Set.empty[BasicFileMeta]))
-      filesToReplace <- getFilesToReplace(pathToFileInfo, pathToFileMetaInLatestVersion)
-      fileReplacements <- replaceFiles(dataset, filesToReplace, prestagedFiles)
-      _ = debug(s"fileReplacements = $fileReplacements")
-
-      oldToNewPathMovedFiles <- getOldToNewPathOfFilesToMove(pathToFileMetaInLatestVersion, pathToFileInfo)
-      fileMovements = oldToNewPathMovedFiles.map { case (old, newPath) => (pathToFileMetaInLatestVersion(old).dataFile.get.id, pathToFileInfo(newPath).metadata) }
-      // Movement will be realized by updating label and directoryLabel attributes of the file; there is no separate "move-file" API endpoint.
-      _ = debug(s"fileMovements = $fileMovements")
-
-      pathsToDelete = pathToFileMetaInLatestVersion.keySet diff pathToFileInfo.keySet diff oldToNewPathMovedFiles.keySet
-      fileDeletions <- getFileDeletions(pathsToDelete, pathToFileMetaInLatestVersion)
-      _ = debug(s"fileDeletions = $fileDeletions")
-      _ <- deleteFiles(dataset, fileDeletions.toList)
-
-      pathsToAdd = pathToFileInfo.keySet diff pathToFileMetaInLatestVersion.keySet diff oldToNewPathMovedFiles.values.toSet
-      fileAdditions <- addFiles(doi, pathsToAdd.map(pathToFileInfo).toList, prestagedFiles).map(_.mapValues(_.metadata))
-
-      // TODO: what happens with file that only got a new description? Their MD will not be updated ??!!
-      // TODO: probably just change this to: update the file md of all the files that are in the new version. Will DV show "null-replacements" in the differences view??
-      _ <- updateFileMetadata(fileReplacements ++ fileMovements ++ fileAdditions)
-      _ <- dataset.awaitUnlock()
-
-      /*
-       * Cannot enable requests if they were disallowed because of closed files in a previous version. However disabling is possible because a the update may add a closed file.
-       */
-      _ <- configureEnableAccessRequests(deposit, doi, canEnable = false)
-    } yield doi
+      r <- datasetApi.viewLatestVersion()
+      v <- r.data
+      _ <- if (v.latestVersion.versionState.contains("DRAFT")) Failure(CannotUpdateDraftDatasetException(deposit))
+           else Success(())
+    } yield ()
   }
 
   private def getDoiBySwordToken: Try[String] = {
@@ -131,9 +155,9 @@ class DatasetUpdater(deposit: Deposit,
   private def getFilesToReplace(pathToFileInfo: Map[Path, FileInfo], pathToFileMetaInLatestVersion: Map[Path, FileMeta]): Try[Map[Int, FileInfo]] = Try {
     trace(())
     val intersection = pathToFileInfo.keySet intersect pathToFileMetaInLatestVersion.keySet
-    debug(s"The following files are in both deposit and latest published version: ${intersection.mkString(", ")}")
+    debug(s"The following files are in both deposit and latest published version: ${ intersection.mkString(", ") }")
     val checksumsDiffer = intersection.filter(p => pathToFileInfo(p).checksum != pathToFileMetaInLatestVersion(p).dataFile.get.checksum.value) // TODO: validate filemetas first
-    debug(s"The following files are in both deposit and latest published version AND have a different checksum: ${checksumsDiffer.mkString(", ")}")
+    debug(s"The following files are in both deposit and latest published version AND have a different checksum: ${ checksumsDiffer.mkString(", ") }")
     checksumsDiffer.map(p => (pathToFileMetaInLatestVersion(p).dataFile.get.id, pathToFileInfo(p))).toMap
   }
 
@@ -154,13 +178,13 @@ class DatasetUpdater(deposit: Deposit,
       checksumsOfPotentiallyMovedFiles = checksumsToPathNonDuplicatedFilesInDeposit.keySet intersect checksumsToPathNonDuplicatedFilesInLatestVersion.keySet
       oldToNewPathMovedFiles = checksumsOfPotentiallyMovedFiles
         .map(c => (checksumsToPathNonDuplicatedFilesInLatestVersion(c), checksumsToPathNonDuplicatedFilesInDeposit(c)))
-/*
- * Work-around for a bug in Dataverse. The API seems to lose the directoryLabel when the draft of a second version is started. For now, we therefore don't filter
- * away files that have kept the same path. They will be "moved" in place, making sure the directoryLabel is reconfirmed.
- *
- * For files with duplicates in the same dataset this will not work, because those are not collected above.
- */
-//        .filter { case (pathInLatestVersion, pathInDeposit) => pathInLatestVersion != pathInDeposit }
+      /*
+       * Work-around for a bug in Dataverse. The API seems to lose the directoryLabel when the draft of a second version is started. For now, we therefore don't filter
+       * away files that have kept the same path. They will be "moved" in place, making sure the directoryLabel is reconfirmed.
+       *
+       * For files with duplicates in the same dataset this will not work, because those are not collected above.
+       */
+      //        .filter { case (pathInLatestVersion, pathInDeposit) => pathInLatestVersion != pathInDeposit }
     } yield oldToNewPathMovedFiles.toMap
   }
 
@@ -213,7 +237,6 @@ class DatasetUpdater(deposit: Deposit,
       }
       fileList <- r.data
       id = fileList.files.head.dataFile.map(_.id).getOrElse(throw new IllegalStateException("Could not get ID of replacement file after replace action"))
-
     } yield (id, fileInfo.metadata)
   }
 }
