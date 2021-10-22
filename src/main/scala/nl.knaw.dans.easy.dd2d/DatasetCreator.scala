@@ -34,15 +34,17 @@ class DatasetCreator(deposit: Deposit,
   trace(deposit)
 
   override def performEdit(): Try[PersistendId] = {
-    (for {
-      // autoPublish is false, because it seems there is a bug with it in Dataverse (most of the time?)
-      response <- if (isMigration)
-                    instance
-                      .dataverse("root")
-                      .importDataset(dataverseDataset, Some(s"doi:${ deposit.doi }"), autoPublish = false)
-                  else instance.dataverse("root").createDataset(dataverseDataset)
-      persistentId <- getPersistentId(response)
-    } yield persistentId) match {
+    {
+      for {
+        // autoPublish is false, because it seems there is a bug with it in Dataverse (most of the time?)
+        response <- if (isMigration)
+                      instance
+                        .dataverse("root")
+                        .importDataset(dataverseDataset, Some(s"doi:${ deposit.doi }"), autoPublish = false)
+                    else instance.dataverse("root").createDataset(dataverseDataset)
+        persistentId <- getPersistentId(response)
+      } yield persistentId
+    } match {
       case Failure(e) => Failure(FailedDepositException(deposit, "Could not import/create dataset", e))
       case Success(persistentId) =>
         (for {
@@ -61,7 +63,7 @@ class DatasetCreator(deposit: Deposit,
         } yield persistentId).recoverWith {
           case NonFatal(e) =>
             logger.error("Dataset creation failed, deleting draft", e)
-            deleteDraft(persistentId)
+            deleteDraftIfExists(persistentId)
         }
     }
   }

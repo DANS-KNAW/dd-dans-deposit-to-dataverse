@@ -37,13 +37,15 @@ class DatasetUpdater(deposit: Deposit,
   trace(deposit)
 
   override def performEdit(): Try[PersistendId] = {
-    (for {
-      doi <- if (isMigration) Try { deposit.dataversePid }
-             else getDoiBySwordToken
-    } yield doi) match {
+    {
+      for {
+        doi <- if (isMigration) Try { deposit.dataversePid }
+               else getDoiBySwordToken
+      } yield doi
+    } match {
       case Failure(e) => Failure(FailedDepositException(deposit, "Could not find persistentId of existing dataset", e))
-      case Success(doi) =>
-        (for {
+      case Success(doi) => {
+        for {
           dataset <- Try { instance.dataset(doi) }
           _ <- dataset.awaitUnlock()
           /*
@@ -93,12 +95,13 @@ class DatasetUpdater(deposit: Deposit,
            * Cannot enable requests if they were disallowed because of closed files in a previous version. However disabling is possible because a the update may add a closed file.
            */
           _ <- configureEnableAccessRequests(deposit, doi, canEnable = false)
-        } yield doi).recoverWith {
-          case e: CannotUpdateDraftDatasetException => Failure(e) // Don't delete the draft that caused the failure
-          case NonFatal(e) =>
-            logger.error("Dataset update failed, deleting draft", e)
-            deleteDraft(doi)
-        }
+        } yield doi
+      }.recoverWith {
+        case e: CannotUpdateDraftDatasetException => Failure(e) // Don't delete the draft that caused the failure
+        case NonFatal(e) =>
+          logger.error("Dataset update failed, deleting draft", e)
+          deleteDraftIfExists(doi)
+      }
     }
   }
 
