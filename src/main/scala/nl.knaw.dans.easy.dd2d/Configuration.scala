@@ -109,18 +109,4 @@ object Configuration {
     if (url.endsWith("/")) url
     else url + "/"
   }
-
-  def loadCsvToMap(csvFile: File, keyColumn: String, valueColumn: String): Try[Map[String, String]] = {
-    import resource.managed
-
-    def csvParse(csvParser: CSVParser): Map[String, String] = {
-      csvParser.iterator().asScala
-        .map { r => (r.get(keyColumn), r.get(valueColumn)) }.toMap
-    }
-
-    managed(CSVParser.parse(
-      csvFile.toJava,
-      StandardCharsets.UTF_8,
-      CSVFormat.RFC4180.withFirstRecordAsHeader())).map(csvParse).tried
-  }
 }

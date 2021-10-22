@@ -17,8 +17,11 @@ package nl.knaw.dans.easy
 
 import better.files.File
 import nl.knaw.dans.lib.dataverse.model.file.FileMeta
+import org.apache.commons.csv.{ CSVFormat, CSVParser }
 import org.apache.commons.lang.StringUtils
 
+import java.nio.charset.StandardCharsets
+import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.mutable
 import scala.util.{ Failure, Success, Try }
 
@@ -66,5 +69,19 @@ package object dd2d {
     val PROCESSED = Value("processed")
     val REJECTED = Value("rejected")
     val FAILED = Value("failed")
+  }
+
+  def loadCsvToMap(csvFile: File, keyColumn: String, valueColumn: String): Try[Map[String, String]] = {
+    import resource.managed
+
+    def csvParse(csvParser: CSVParser): Map[String, String] = {
+      csvParser.iterator().asScala
+        .map { r => (r.get(keyColumn), r.get(valueColumn)) }.toMap
+    }
+
+    managed(CSVParser.parse(
+      csvFile.toJava,
+      StandardCharsets.UTF_8,
+      CSVFormat.RFC4180.withFirstRecordAsHeader())).map(csvParse).tried
   }
 }
