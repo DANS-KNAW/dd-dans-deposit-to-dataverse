@@ -87,12 +87,22 @@ case class Deposit(dir: File) extends DebugEnhancedLogging {
     case t: Throwable => Failure(new IllegalArgumentException(s"Unparseable XML: ${ t.getMessage }"))
   }
 
+  lazy val tryOptPrestagedCsv: Try[Option[Map[Path, String]]] = {
+    val prestagedFile = bagDir / "metadata" / "pre-staged.csv"
+    if (prestagedFile.exists) {
+      loadCsvToMap(prestagedFile, "path", "checksum")
+        .map(_.map { case (k, v) => Paths.get(k) -> v }).map(Option.apply)
+    }
+    else Try(None)
+  }
+
   lazy val tryFilePathToSha1: Try[Map[Path, String]] = {
     for {
       bag <- tryBag
       optSha1Manifest = bag.getPayLoadManifests.asScala.find(_.getAlgorithm == StandardSupportedAlgorithms.SHA1)
       _ = if (optSha1Manifest.isEmpty) throw new IllegalArgumentException("Deposit bag does not have SHA-1 payload manifest")
-      result = optSha1Manifest.get.getFileToChecksumMap.asScala.map { case (p, c) => (bagDir.path relativize p, c) }.toMap
+      optPrestagedCsv <- tryOptPrestagedCsv
+      result = optSha1Manifest.get.getFileToChecksumMap.asScala.map { case (p, c) => (bagDir.path relativize p, c) }.toMap ++ optPrestagedCsv.getOrElse(Map.empty) // TODO: add check for overlapping keys?
     } yield result
   }
 

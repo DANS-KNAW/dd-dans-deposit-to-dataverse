@@ -46,8 +46,8 @@ class DatasetCreator(deposit: Deposit,
       } yield persistentId
     } match {
       case Failure(e) => Failure(FailedDepositException(deposit, "Could not import/create dataset", e))
-      case Success(persistentId) =>
-        (for {
+      case Success(persistentId) => {
+        for {
           _ <- setLicense(deposit, instance.dataset(persistentId))
           _ <- instance.dataset(persistentId).awaitUnlock()
           pathToFileInfo <- getPathToFileInfo(deposit)
@@ -60,11 +60,12 @@ class DatasetCreator(deposit: Deposit,
           _ = debug(s"Assigning contributor role to ${ deposit.depositorUserId }")
           _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${ deposit.depositorUserId }", DefaultRole.contributor.toString))
           _ <- instance.dataset(persistentId).awaitUnlock()
-        } yield persistentId).recoverWith {
-          case NonFatal(e) =>
-            logger.error("Dataset creation failed, deleting draft", e)
-            deleteDraftIfExists(persistentId)
-        }
+        } yield persistentId
+      }.recoverWith {
+        case NonFatal(e) =>
+          logger.error("Dataset creation failed, deleting draft", e)
+          deleteDraftIfExists(persistentId)
+      }
     }
   }
 
