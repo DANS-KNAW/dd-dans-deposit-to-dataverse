@@ -20,7 +20,7 @@ import nl.knaw.dans.easy.dd2d.migrationinfo.BasicFileMeta
 import nl.knaw.dans.lib.dataverse.model.file.FileMeta
 import nl.knaw.dans.lib.dataverse.model.file.prestaged.PrestagedFile
 import nl.knaw.dans.lib.dataverse.{ DatasetApi, DataverseInstance }
-import nl.knaw.dans.lib.error.TraversableTryExtensions
+import nl.knaw.dans.lib.error.{ TraversableTryExtensions, TryExtensions }
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
 import java.nio.file.{ Path, Paths }
@@ -130,20 +130,23 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
     } yield ()
   }
 
-  protected def deleteDraftIfExists(persistentId: String): Try[PersistendId] = {
-    for {
+  protected def deleteDraftIfExists(persistentId: String): Unit = {
+    val result = for {
       r <- instance.dataset(persistentId).viewLatestVersion()
       v <- r.data
       _ <- if (v.latestVersion.versionState.contains("DRAFT"))
-             deleteDraft2(persistentId)
+             deleteDraft(persistentId)
            else Success(())
-    } yield persistentId
+    } yield ()
+    result.doIfFailure {
+      case e => logger.warn("Could not delete draft", e)
+    }
   }
 
-  private def deleteDraft2(persistentId: PersistendId): Try[Unit] = {
+  private def deleteDraft(persistentId: PersistendId): Try[Unit] = {
     for {
       r <- instance.dataset(persistentId).deleteDraft()
-      _ = logger.info(s"Result of deleteDraft = ${ r.data }")
+      _ = logger.debug(s"Result of deleteDraft = ${ r.data }")
     } yield ()
   }
 }
