@@ -42,7 +42,16 @@ trait Spatial {
     // make sure that you have valid numbers here
     cs(0).toDouble
     cs(1).toDouble
-    Point(cs(0), cs(1))
+
+    if (isRd(p))
+      Point(cs(0), cs(1))
+    else
+    /*
+     * https://wiki.esipfed.org/CRS_Specification
+     * urn:ogc:def:crs:EPSG::4326 has coordinate order latitude(north), longitude(east) = y x
+     * we make this the default order
+     */
+      Point(cs(1), cs(0))
   }
 }
 
