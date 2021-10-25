@@ -27,23 +27,23 @@ trait Spatial {
   val RD_SRS_NAME = "http://www.opengis.net/def/crs/EPSG/0/28992"
 
   val RD_SCHEME = "RD (in m.)"
-  val LATLON_SCHEME = "latitude/longitude (degrees)"
+  val LONLAT_SCHEME = "longitude/latitude (degrees)"
 
   case class Point(x: String, y: String)
 
   protected def isRd(env: Node): Boolean = {
-    // Not specifying a namespace in the attribut lookup because srsName is not recognized by the parser to be in the GML namespace,
+    // Not specifying a namespace in the attribute lookup because srsName is not recognized by the parser to be in the GML namespace,
     // even when the Envelope element has GML as its default namespace.
     env.attribute("srsName").exists(_.text == RD_SRS_NAME)
   }
 
-  protected def getPoint(p: Node): Point = {
+  protected def getPoint(isRd: Boolean)(p: Node): Point = {
     val cs = p.text.trim.split("""\s+""")
     // make sure that you have valid numbers here
     cs(0).toDouble
     cs(1).toDouble
 
-    if (isRd(p))
+    if (isRd)
       Point(cs(0), cs(1))
     else
     /*
