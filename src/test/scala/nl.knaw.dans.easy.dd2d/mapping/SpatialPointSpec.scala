@@ -21,7 +21,7 @@ import org.json4s.{ DefaultFormats, Formats }
 
 import scala.util.{ Failure, Try }
 
-class SpatialPointSpec extends TestSupportFixture with BlockTemporalAndSpatial {
+class SpatialPointSpec extends TestSupportFixture with BlockTemporalAndSpatial with Spatial {
   private implicit val jsonFormats: Formats = DefaultFormats
 
   "toEasyTsmSpatialPointValueObject" should "create correct spatial point details in Json object" in {
@@ -30,25 +30,25 @@ class SpatialPointSpec extends TestSupportFixture with BlockTemporalAndSpatial {
         <Point>52.08113 4.34510</Point>
       </spatial>
     val result = Serialization.writePretty(SpatialPoint.toEasyTsmSpatialPointValueObject(spatialPoint))
-    findString(result, s"$SPATIAL_POINT_SCHEME.value") shouldBe "latitude/longitude (degrees)"
-    findString(result, s"$SPATIAL_POINT_X.value") shouldBe "52.08113"
-    findString(result, s"$SPATIAL_POINT_Y.value") shouldBe "4.34510"
+    findString(result, s"$SPATIAL_POINT_SCHEME.value") shouldBe LONLAT_SCHEME
+    findString(result, s"$SPATIAL_POINT_X.value") shouldBe "4.34510"
+    findString(result, s"$SPATIAL_POINT_Y.value") shouldBe "52.08113"
   }
 
   it should "give 'RD (in m.)' as spatial point scheme and coordinates as integers" in {
     val spatialPoint =
-      <spatial srsName="http://www.opengis.net/def/crs/EPSG/0/28992">
+      <spatial srsName={RD_SRS_NAME}>
         <Point>469470 209942</Point>
       </spatial>
     val result = Serialization.writePretty(SpatialPoint.toEasyTsmSpatialPointValueObject(spatialPoint))
-    findString(result, s"$SPATIAL_POINT_SCHEME.value") shouldBe "RD (in m.)"
+    findString(result, s"$SPATIAL_POINT_SCHEME.value") shouldBe RD_SCHEME
     findString(result, s"$SPATIAL_POINT_X.value") shouldBe "469470"
     findString(result, s"$SPATIAL_POINT_Y.value") shouldBe "209942"
   }
 
   it should "throw exception when spatial point coordinates are given incorrectly" in {
     val spatialPoint =
-      <spatial srsName="http://www.opengis.net/def/crs/EPSG/0/28992">
+      <spatial srsName={RD_SRS_NAME}>
         <Point>52.08113, 4.34510</Point>
       </spatial>
     inside(Try(SpatialPoint.toEasyTsmSpatialPointValueObject(spatialPoint))) {
