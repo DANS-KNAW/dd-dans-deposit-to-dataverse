@@ -21,6 +21,15 @@ import scala.xml.Node
 
 object License {
 
+  private val variantToNormalized = Map(
+    "http://www.gnu.org/licenses/gpl-3.0.en.html" -> "http://www.gnu.org/licenses/gpl-3.0",
+    "http://www.gnu.org/licenses/lgpl-3.0.txt" -> "http://www.gnu.org/licenses/lgpl-3.0",
+    "http://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html" -> "http://www.gnu.org/licenses/old-licenses/gpl-2.0",
+    "http://www.mozilla.org/en-US/MPL/2.0/FAQ/" -> "https://mozilla.org/MPL/2.0",
+    "http://www.ohwr.org/attachments/735/CERNOHLv1_1.txt" -> "https://ohwr.org/project/cernohl/wikis/Documents/CERN-OHL-version-1.1",
+    "http://www.ohwr.org/attachments/2388/cern_ohl_v_1_2.txt" -> "https://ohwr.org/project/cernohl/wikis/Documents/CERN-OHL-version-1.2",
+    "http://dans.knaw.nl/en/about/organisation-and-policy/legal-information/DANSLicence.pdf" -> "https://dans.knaw.nl/en/about/organisation-and-policy/legal-information/DANSLicence.pdf")
+
   def isLicenseUri(node: Node): Boolean = {
     if (node.label != "license") false
     else if (node.namespace != DCTERMS_NAMESPACE_URI) false
@@ -35,7 +44,15 @@ object License {
   }
 
   def getLicenseUri(node: Node): URI = {
-    if (isLicenseUri(node)) new URI(node.text)
+    if (isLicenseUri(node)) normalizeLicense(node.text).getOrElse(throw new IllegalArgumentException(s"Not a support license: ${node.text}"))
     else throw new IllegalArgumentException("Not a valid license node")
+  }
+
+  def normalizeLicense(s: String): Option[URI] = {
+    val uri = new URI(s)
+    variantToNormalized.get(uri.toASCIIString).orElse {
+      val httpsUri = new URI("https", uri.getHost, uri.getPath)
+      variantToNormalized.get(httpsUri.toASCIIString)
+    }.map(new URI(_))
   }
 }
