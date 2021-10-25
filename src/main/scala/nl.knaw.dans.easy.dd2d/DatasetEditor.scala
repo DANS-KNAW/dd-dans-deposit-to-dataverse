@@ -146,7 +146,7 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
   private def deleteDraft(persistentId: PersistendId): Try[Unit] = {
     for {
       r <- instance.dataset(persistentId).deleteDraft()
-      _ = logger.debug(s"Result of deleteDraft = ${ r.data }")
+      _ = logger.info(s"DRAFT deleted")
     } yield ()
   }
 }
