@@ -22,7 +22,7 @@ import java.net.URI
 import java.nio.file.Paths
 
 class LicenseSpec extends TestSupportFixture {
-  private val variantToLicense = loadCsvToMap(File(Paths.get("src/main/assembly/dist/install/license-uri-variants.csv")),
+  private val variantToLicense = loadCsvToMap(File(Paths.get("src/test/resources/license-uri-variants.csv")),
     keyColumn = "Variant",
     valueColumn = "Normalized").get
   private val supportedLicenses = loadTxtToList(File(Paths.get("src/main/assembly/dist/install/supported-licenses.txt"))).get.map(s => new URI(s))
@@ -58,4 +58,20 @@ class LicenseSpec extends TestSupportFixture {
     val lic = <dct:rights xmlns:dct="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="dcterms:URI">http://creativecommons.org/licenses/by-sa/4.0/</dct:rights>
     an [IllegalArgumentException] shouldBe thrownBy(License.getLicenseUri(supportedLicenses)(variantToLicense)(lic))
   }
+
+  it should "Return a supported license given a configured variant" in {
+    val variant = "http://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html"
+    val normalized = "http://www.gnu.org/licenses/old-licenses/gpl-2.0"
+    val lic = <dct:license xmlns:dct="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="dcterms:URI">{variant}</dct:license>
+    License.getLicenseUri(supportedLicenses)(variantToLicense)(lic) shouldBe new URI(normalized)
+  }
+
+  it should "Accept supported license with either http or https scheme" in {
+    val withHttps = "https://www.gnu.org/licenses/old-licenses/gpl-2.0"
+    val normalizedWithoutHttps = "http://www.gnu.org/licenses/old-licenses/gpl-2.0"
+    val lic = <dct:license xmlns:dct="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="dcterms:URI">{withHttps}</dct:license>
+    License.getLicenseUri(supportedLicenses)(variantToLicense)(lic) shouldBe new URI(normalizedWithoutHttps)
+
+  }
+
 }

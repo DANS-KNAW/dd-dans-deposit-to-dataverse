@@ -38,7 +38,7 @@ object License {
     if (isLicenseUri(node)) {
       val licenseUriStr = normalizeVariants(variantToNormalized)(removeTrailingSlash(node.text))
       val licenseUri = new URI(licenseUriStr)
-      normalizeScheme(supportedLicenses)(licenseUri).getOrElse(throw new IllegalArgumentException(s"Unsupported license: ${licenseUri.toASCIIString}"))
+      normalizeScheme(supportedLicenses)(licenseUri).getOrElse(throw new IllegalArgumentException(s"Unsupported license: ${ licenseUri.toASCIIString }"))
     }
     else throw new IllegalArgumentException("Not a valid license node")
   }
@@ -53,9 +53,12 @@ object License {
   }
 
   def normalizeScheme(supportedLicenses: List[URI])(uri: URI): Option[URI] = {
-    Option(uri)
-
-
-
+    supportedLicenses.find {
+      sl =>
+        uri.getHost == sl.getHost &&
+          uri.getPath == sl.getPath &&
+          uri.getPort == sl.getPort &&
+          uri.getQuery == sl.getQuery
+    }.filter { uri => uri.getScheme == "http" || uri.getScheme == "https" }
   }
 }
