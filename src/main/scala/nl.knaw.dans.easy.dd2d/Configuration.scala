@@ -44,7 +44,9 @@ case class Configuration(version: String,
                          narcisClassification: Elem,
                          iso1ToDataverseLanguage: Map[String, String],
                          iso2ToDataverseLanguage: Map[String, String],
-                         reportIdToTerm: Map[String, String]
+                         reportIdToTerm: Map[String, String],
+                         variantToLicense: Map[String, String],
+                         supportedLicenses: List[URI]
                         )
 
 object Configuration {
@@ -68,11 +70,21 @@ object Configuration {
         .getOrElse { throw new IllegalStateException(s"File $name not found in APPHOME/install directory") }
     }
 
+    def findFileInEtc(name: String): File = {
+      Seq(
+        root / "etc" / "opt" / "dans.knaw.nl" / "dd-dans-deposit-to-dataverse" / name,
+        home / "cfg" / name)
+        .find(_.exists)
+        .getOrElse { throw new IllegalStateException(s"File $name not found in APPHOME/cfg directory") }
+    }
+
     val narcisClassificationFile = findFileInInstall("narcis_classification.xml")
     val narcisClassification = XML.loadFile(narcisClassificationFile.toJava)
     val iso1ToDataverseLanguageMappingFile = findFileInInstall("iso639-1-to-dv.csv")
     val iso2ToDataverseLanguageMappingFile = findFileInInstall("iso639-2-to-dv.csv")
     val rapportIdToTermMappingFile = findFileInInstall("ABR-reports.csv")
+    val licenseUriVariantsFile = findFileInEtc("license-uri-variants.csv")
+    val supportedLicensesFile = findFileInEtc("supported-licenses.txt")
 
     new Configuration(
       version = (home / "bin" / "version").contentAsString.stripLineEnd,
@@ -101,7 +113,9 @@ object Configuration {
       narcisClassification,
       iso1ToDataverseLanguage = loadCsvToMap(iso1ToDataverseLanguageMappingFile, keyColumn = "ISO639-1", valueColumn = "Dataverse-language").get,
       iso2ToDataverseLanguage = loadCsvToMap(iso2ToDataverseLanguageMappingFile, keyColumn = "ISO639-2", valueColumn = "Dataverse-language").get,
-      reportIdToTerm = loadCsvToMap(rapportIdToTermMappingFile, keyColumn = "URI-suffix", valueColumn = "Term").get
+      reportIdToTerm = loadCsvToMap(rapportIdToTermMappingFile, keyColumn = "URI-suffix", valueColumn = "Term").get,
+      variantToLicense = loadCsvToMap(licenseUriVariantsFile, keyColumn = "Variant", valueColumn = "Normalized").get,
+      supportedLicenses = loadTxtToList(supportedLicensesFile).map(_.map(s => new URI(s))).get
     )
   }
 

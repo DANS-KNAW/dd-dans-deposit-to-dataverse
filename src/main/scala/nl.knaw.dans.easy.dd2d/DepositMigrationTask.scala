@@ -22,6 +22,7 @@ import nl.knaw.dans.easy.dd2d.migrationinfo.MigrationInfo
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.dataverse.model.dataset.Dataset
 
+import java.net.URI
 import java.util.regex.Pattern
 import scala.language.postfixOps
 import scala.util.{ Failure, Success, Try }
@@ -38,6 +39,8 @@ class DepositMigrationTask(deposit: Deposit,
                            narcisClassification: Elem,
                            iso1ToDataverseLanguage: Map[String, String],
                            iso2ToDataverseLanguage: Map[String, String],
+                           variantToLicense: Map[String, String],
+                           supportedLicenses: List[URI],
                            repordIdToTerm: Map[String, String],
                            outboxDir: File)
   extends DepositIngestTask(deposit,
@@ -51,6 +54,8 @@ class DepositMigrationTask(deposit: Deposit,
     narcisClassification,
     iso1ToDataverseLanguage,
     iso2ToDataverseLanguage,
+    variantToLicense,
+    supportedLicenses,
     repordIdToTerm,
     outboxDir) {
 
@@ -63,11 +68,11 @@ class DepositMigrationTask(deposit: Deposit,
   }
 
   override def newDatasetUpdater(dataverseDataset: Dataset): DatasetUpdater = {
-    new DatasetUpdater(deposit, optFileExclusionPattern, isMigration = true, dataverseDataset.datasetVersion.metadataBlocks, instance, migrationInfo)
+    new DatasetUpdater(deposit, optFileExclusionPattern, isMigration = true, dataverseDataset.datasetVersion.metadataBlocks, variantToLicense, supportedLicenses, instance, migrationInfo)
   }
 
   override def newDatasetCreator(dataverseDataset: Dataset): DatasetCreator = {
-    new DatasetCreator(deposit, optFileExclusionPattern, isMigration = true, dataverseDataset, instance, migrationInfo)
+    new DatasetCreator(deposit, optFileExclusionPattern, isMigration = true, dataverseDataset, variantToLicense, supportedLicenses, instance, migrationInfo)
   }
 
   override protected def getDateOfDeposit: Try[Option[String]] = {

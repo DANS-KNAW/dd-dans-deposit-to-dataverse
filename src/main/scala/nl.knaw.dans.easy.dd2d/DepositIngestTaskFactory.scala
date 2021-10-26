@@ -20,6 +20,7 @@ import nl.knaw.dans.easy.dd2d.dansbag.DansBagValidator
 import nl.knaw.dans.easy.dd2d.migrationinfo.MigrationInfo
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 
+import java.net.URI
 import java.util.regex.Pattern
 import scala.xml.Elem
 
@@ -49,6 +50,9 @@ class DepositIngestTaskFactory(isMigrated: Boolean = false,
                                narcisClassification: Elem,
                                iso1ToDataverseLanguage: Map[String, String],
                                iso2ToDataverseLanguage: Map[String, String],
+                               variantToLicense: Map[String, String],
+                               supportedLicenses: List[URI],
+
                                reportIdToTerm: Map[String, String],
                                outboxDir: File) {
 
@@ -65,6 +69,8 @@ class DepositIngestTaskFactory(isMigrated: Boolean = false,
         narcisClassification,
         iso1ToDataverseLanguage,
         iso2ToDataverseLanguage,
+        variantToLicense,
+        supportedLicenses,
         reportIdToTerm,
         outboxDir: File)
     else
@@ -80,6 +86,8 @@ class DepositIngestTaskFactory(isMigrated: Boolean = false,
         narcisClassification,
         iso1ToDataverseLanguage,
         iso2ToDataverseLanguage,
+        variantToLicense,
+        supportedLicenses,
         reportIdToTerm,
         outboxDir: File)
   }

@@ -48,6 +48,8 @@ class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhan
         configuration.narcisClassification,
         configuration.iso1ToDataverseLanguage,
         configuration.iso2ToDataverseLanguage,
+        configuration.variantToLicense,
+        configuration.supportedLicenses,
         configuration.reportIdToTerm,
         configuration.outboxDir)))
   }
@@ -80,6 +82,8 @@ class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhan
           configuration.narcisClassification,
           configuration.iso1ToDataverseLanguage,
           configuration.iso2ToDataverseLanguage,
+          configuration.variantToLicense,
+          configuration.supportedLicenses,
           configuration.reportIdToTerm,
           outboxDir)).process()
     } yield ()
@@ -104,6 +108,8 @@ class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhan
           configuration.narcisClassification,
           configuration.iso1ToDataverseLanguage,
           configuration.iso2ToDataverseLanguage,
+          configuration.variantToLicense,
+          configuration.supportedLicenses,
           configuration.reportIdToTerm,
           outboxDir))).process()
     } yield ()

@@ -23,6 +23,7 @@ import nl.knaw.dans.lib.dataverse.{ DatasetApi, DataverseInstance }
 import nl.knaw.dans.lib.error.{ TraversableTryExtensions, TryExtensions }
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
+import java.net.URI
 import java.nio.file.{ Path, Paths }
 import java.util.regex.Pattern
 import scala.util.{ Failure, Success, Try }
@@ -117,7 +118,7 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
     } yield ()
   }
 
-  protected def setLicense(deposit: Deposit, dataset: DatasetApi): Try[Unit] = {
+  protected def setLicense(supportedLicenses: List[URI])(variantToNormalized: Map[String, String])(deposit: Deposit, dataset: DatasetApi): Try[Unit] = {
     trace(deposit)
     for {
       ddm <- deposit.tryDdm
@@ -125,7 +126,7 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
       _ <- if (optLicense.isEmpty) Failure(RejectedDepositException(deposit, "No license specified"))
            else dataset.updateMetadataFromJsonLd(
              s"""
-                |{ "http://schema.org/license": "${ optLicense.get.text }" }
+                |{ "http://schema.org/license": "${ License.getLicenseUri(supportedLicenses)(variantToNormalized)(optLicense.get).toASCIIString }" }
                 |""".stripMargin, replace = true)
     } yield ()
   }

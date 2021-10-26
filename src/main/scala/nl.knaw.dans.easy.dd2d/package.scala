@@ -18,11 +18,13 @@ package nl.knaw.dans.easy
 import better.files.File
 import nl.knaw.dans.lib.dataverse.model.file.FileMeta
 import org.apache.commons.csv.{ CSVFormat, CSVParser }
+import org.apache.commons.io.FileUtils
 import org.apache.commons.lang.StringUtils
 
 import java.nio.charset.StandardCharsets
-import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.collection.JavaConverters.{ asScalaBufferConverter, asScalaIteratorConverter }
 import scala.collection.mutable
+import scala.language.postfixOps
 import scala.util.{ Failure, Success, Try }
 
 package object dd2d {
@@ -83,5 +85,9 @@ package object dd2d {
       csvFile.toJava,
       StandardCharsets.UTF_8,
       CSVFormat.RFC4180.withFirstRecordAsHeader())).map(csvParse).tried
+  }
+
+  def loadTxtToList(txtFile: File): Try[List[String]] = Try {
+    FileUtils.readLines(txtFile.toJava, StandardCharsets.UTF_8).asScala.toList
   }
 }

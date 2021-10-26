@@ -15,11 +15,17 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import nl.knaw.dans.easy.dd2d.TestSupportFixture
+import better.files.File
+import nl.knaw.dans.easy.dd2d.{ TestSupportFixture, loadCsvToMap, loadTxtToList }
 
 import java.net.URI
+import java.nio.file.Paths
 
 class LicenseSpec extends TestSupportFixture {
+  private val variantToLicense = loadCsvToMap(File(Paths.get("src/test/resources/debug-config/license-uri-variants.csv")),
+    keyColumn = "Variant",
+    valueColumn = "Normalized").get
+  private val supportedLicenses = loadTxtToList(File(Paths.get("src/main/assembly/dist/cfg/supported-licenses.txt"))).get.map(s => new URI(s))
 
   "isLicense" should "return true if license element is found and has proper attribute" in {
     val lic = <dct:license xmlns:dct="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="dcterms:URI">http://creativecommons.org/licenses/by-sa/4.0/</dct:license>
@@ -41,14 +47,39 @@ class LicenseSpec extends TestSupportFixture {
     License.isLicenseUri(lic) shouldBe false
   }
 
-  "getLicense" should "return URI with license value for license element " in {
-    val s = "http://creativecommons.org/licenses/by-sa/4.0/"
-    val lic = <dct:license xmlns:dct="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="dcterms:URI">{s}</dct:license>
-    License.getLicenseUri(lic) shouldBe new URI(s)
+  "getLicense" should "return URI with license value for license element without trailing slash" in {
+    val s = "http://creativecommons.org/licenses/by-sa/4.0"
+    val trailingSlash = "/"
+    val lic = <dct:license xmlns:dct="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="dcterms:URI">{s}{trailingSlash}</dct:license>
+    License.getLicenseUri(supportedLicenses)(variantToLicense)(lic) shouldBe new URI(s)
   }
 
   it should "throw an IllegalArgumentException if isLicense returns false" in {
     val lic = <dct:rights xmlns:dct="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="dcterms:URI">http://creativecommons.org/licenses/by-sa/4.0/</dct:rights>
-    an [IllegalArgumentException] shouldBe thrownBy(License.getLicenseUri(lic))
+    an [IllegalArgumentException] shouldBe thrownBy(License.getLicenseUri(supportedLicenses)(variantToLicense)(lic))
   }
+
+  it should "Return a supported license given a configured variant" in {
+    val variant = "http://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html"
+    val normalized = "http://www.gnu.org/licenses/old-licenses/gpl-2.0"
+    val lic = <dct:license xmlns:dct="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="dcterms:URI">{variant}</dct:license>
+    License.getLicenseUri(supportedLicenses)(variantToLicense)(lic) shouldBe new URI(normalized)
+  }
+
+  it should "Accept supported license with either http or https scheme" in {
+    val withHttps = "https://www.gnu.org/licenses/old-licenses/gpl-2.0"
+    val normalizedWithoutHttps = "http://www.gnu.org/licenses/old-licenses/gpl-2.0"
+    val lic = <dct:license xmlns:dct="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="dcterms:URI">{withHttps}</dct:license>
+    License.getLicenseUri(supportedLicenses)(variantToLicense)(lic) shouldBe new URI(normalizedWithoutHttps)
+  }
+
+  it should "Accept empty license variants file" in {
+    val variantToLicense = loadCsvToMap(File(Paths.get("src/main/assembly/dist/cfg/license-uri-variants.csv")),
+      keyColumn = "Variant",
+      valueColumn = "Normalized").get
+    val alreadyNormalized = "http://www.gnu.org/licenses/old-licenses/gpl-2.0"
+    val lic = <dct:license xmlns:dct="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="dcterms:URI">{alreadyNormalized}</dct:license>
+    License.getLicenseUri(supportedLicenses)(variantToLicense)(lic) shouldBe new URI(alreadyNormalized)
+  }
+
 }
