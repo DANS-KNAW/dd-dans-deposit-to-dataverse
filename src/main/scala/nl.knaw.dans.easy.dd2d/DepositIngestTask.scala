@@ -30,6 +30,7 @@ import org.json4s.native.Serialization
 import org.json4s.{ DefaultFormats, Formats }
 
 import java.lang.Thread.sleep
+import java.net.URI
 import java.util.regex.Pattern
 import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
@@ -54,6 +55,8 @@ case class DepositIngestTask(deposit: Deposit,
                              narcisClassification: Elem,
                              iso1ToDataverseLanguage: Map[String, String],
                              iso2ToDataverseLanguage: Map[String, String],
+                             variantToLicense: Map[String, String],
+                             supportedLicenses: List[URI],
                              repordIdToTerm: Map[String, String],
                              outboxDir: File) extends Task[Deposit] with DebugEnhancedLogging {
   trace(deposit)
@@ -170,11 +173,11 @@ case class DepositIngestTask(deposit: Deposit,
   }
 
   protected def newDatasetUpdater(dataverseDataset: Dataset): DatasetUpdater = {
-    new DatasetUpdater(deposit, optFileExclusionPattern, isMigration = false, dataverseDataset.datasetVersion.metadataBlocks, instance, Option.empty)
+    new DatasetUpdater(deposit, optFileExclusionPattern, isMigration = false, dataverseDataset.datasetVersion.metadataBlocks, variantToLicense, supportedLicenses, instance, Option.empty)
   }
 
   protected def newDatasetCreator(dataverseDataset: Dataset): DatasetCreator = {
-    new DatasetCreator(deposit, optFileExclusionPattern, isMigration = false, dataverseDataset, instance, Option.empty)
+    new DatasetCreator(deposit, optFileExclusionPattern, isMigration = false, dataverseDataset, variantToLicense, supportedLicenses, instance, Option.empty)
   }
 
   protected def publishDataset(persistentId: String): Try[Unit] = {

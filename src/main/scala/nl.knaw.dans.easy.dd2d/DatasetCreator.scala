@@ -22,6 +22,7 @@ import nl.knaw.dans.lib.dataverse.{ DataverseInstance, DataverseResponse }
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.error._
 
+import java.net.URI
 import java.util.regex.Pattern
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
@@ -30,6 +31,8 @@ class DatasetCreator(deposit: Deposit,
                      optFileExclusionPattern: Option[Pattern],
                      isMigration: Boolean = false,
                      dataverseDataset: Dataset,
+                     variantToLicense: Map[String, String],
+                     supportedLicenses: List[URI],
                      instance: DataverseInstance,
                      optMigrationInfoService: Option[MigrationInfo]) extends DatasetEditor(instance, optFileExclusionPattern) with DebugEnhancedLogging {
   trace(deposit)
@@ -49,7 +52,7 @@ class DatasetCreator(deposit: Deposit,
       case Failure(e) => Failure(FailedDepositException(deposit, "Could not import/create dataset", e))
       case Success(persistentId) => {
         for {
-          _ <- setLicense(deposit, instance.dataset(persistentId))
+          _ <- setLicense(supportedLicenses)(variantToLicense)(deposit, instance.dataset(persistentId))
           _ <- instance.dataset(persistentId).awaitUnlock()
           pathToFileInfo <- getPathToFileInfo(deposit)
           prestagedFiles <- optMigrationInfoService.map(_.getPrestagedDataFilesFor(s"doi:${ deposit.doi }", 1)).getOrElse(Success(Set.empty[BasicFileMeta]))

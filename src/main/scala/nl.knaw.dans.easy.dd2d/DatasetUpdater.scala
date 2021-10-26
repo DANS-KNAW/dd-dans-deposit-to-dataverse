@@ -23,6 +23,7 @@ import nl.knaw.dans.lib.dataverse.{ DatasetApi, DataverseInstance, FileApi, Vers
 import nl.knaw.dans.lib.error.{ TraversableTryExtensions, TryExtensions }
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
+import java.net.URI
 import java.nio.file.{ Path, Paths }
 import java.util.regex.Pattern
 import scala.util.control.NonFatal
@@ -32,6 +33,8 @@ class DatasetUpdater(deposit: Deposit,
                      optFileExclusionPattern: Option[Pattern],
                      isMigration: Boolean = false,
                      metadataBlocks: MetadataBlocks,
+                     variantToLicense: Map[String, String],
+                     supportedLicenses: List[URI],
                      instance: DataverseInstance,
                      optMigrationInfoService: Option[MigrationInfo]) extends DatasetEditor(instance, optFileExclusionPattern) with DebugEnhancedLogging {
   trace(deposit)
@@ -58,7 +61,7 @@ class DatasetUpdater(deposit: Deposit,
           _ <- dataset.updateMetadata(metadataBlocks)
           _ <- dataset.awaitUnlock()
 
-          _ <- setLicense(deposit, dataset)
+          _ <- setLicense(supportedLicenses)(variantToLicense)(deposit, dataset)
           _ <- dataset.awaitUnlock()
           pathToFileInfo <- getPathToFileInfo(deposit)
           _ = debug(s"pathToFileInfo = $pathToFileInfo")
