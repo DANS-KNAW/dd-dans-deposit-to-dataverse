@@ -20,6 +20,7 @@ import nl.knaw.dans.lib.dataverse.model.dataset.{ Dataset, DatasetCreationResult
 import nl.knaw.dans.lib.dataverse.model.{ DefaultRole, RoleAssignment }
 import nl.knaw.dans.lib.dataverse.{ DataverseInstance, DataverseResponse }
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
+import nl.knaw.dans.lib.error._
 
 import java.util.regex.Pattern
 import scala.util.control.NonFatal
@@ -61,9 +62,9 @@ class DatasetCreator(deposit: Deposit,
           _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${ deposit.depositorUserId }", DefaultRole.contributor.toString))
           _ <- instance.dataset(persistentId).awaitUnlock()
         } yield persistentId
-      }.recoverWith {
+      }.doIfFailure {
         case NonFatal(e) =>
-          logger.error("Dataset creation failed, deleting draft", e)
+          logger.error("Dataset creation failed, deleting draft")
           deleteDraftIfExists(persistentId)
       }
     }

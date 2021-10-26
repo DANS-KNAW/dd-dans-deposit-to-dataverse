@@ -20,7 +20,7 @@ import nl.knaw.dans.lib.dataverse.model.dataset.MetadataBlocks
 import nl.knaw.dans.lib.dataverse.model.file.FileMeta
 import nl.knaw.dans.lib.dataverse.model.search.DatasetResultItem
 import nl.knaw.dans.lib.dataverse.{ DatasetApi, DataverseInstance, FileApi, Version }
-import nl.knaw.dans.lib.error.TraversableTryExtensions
+import nl.knaw.dans.lib.error.{ TraversableTryExtensions, TryExtensions }
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
 import java.nio.file.{ Path, Paths }
@@ -96,8 +96,8 @@ class DatasetUpdater(deposit: Deposit,
            */
           _ <- configureEnableAccessRequests(deposit, doi, canEnable = false)
         } yield doi
-      }.recoverWith {
-        case e: CannotUpdateDraftDatasetException => Failure(e) // Don't delete the draft that caused the failure
+      }.doIfFailure {
+        case e: CannotUpdateDraftDatasetException =>  // Don't delete the draft that caused the failure
         case NonFatal(e) =>
           logger.error("Dataset update failed, deleting draft", e)
           deleteDraftIfExists(doi)
