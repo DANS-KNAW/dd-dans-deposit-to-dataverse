@@ -38,6 +38,8 @@ class IndexSpec extends TestSupportFixture {
     iso1ToDataverseLanguage = null,
     iso2ToDataverseLanguage = null,
     reportIdToTerm = null,
+    variantToLicense = null,
+    supportedLicenses = null
   )
   private val clo = new CommandLineOptions(Array[String](), configuration) {
     // avoids System.exit() in case of invalid arguments or "--help"
