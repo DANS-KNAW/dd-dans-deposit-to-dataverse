@@ -25,6 +25,8 @@ import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import org.apache.commons.configuration.PropertiesConfiguration
 
 import java.nio.file.{ Path, Paths }
+import java.text.SimpleDateFormat
+import java.util.Date
 import scala.collection.JavaConverters.{ asScalaSetConverter, mapAsScalaMapConverter }
 import scala.util.{ Failure, Try }
 import scala.xml.{ Node, Utility, XML }
@@ -145,6 +147,14 @@ case class Deposit(dir: File) extends DebugEnhancedLogging {
     depositProperties.addProperty("state.description", description)
     depositProperties.save()
   }
+
+  def getDateAvailable: Try[Date] = {
+    for {
+      ddm <- tryDdm
+      dateAvailable = (ddm \ "profile" \ "available").map(_.text).headOption.getOrElse(throw new IllegalArgumentException("Deposit without a ddm:available element"))
+    } yield dateAvailableFormat.parse(dateAvailable)
+  }
+
 
   def isUpdate: Try[Boolean] = {
     for {

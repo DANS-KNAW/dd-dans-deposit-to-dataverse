@@ -19,10 +19,11 @@ import nl.knaw.dans.easy.dd2d.migrationinfo.{ BasicFileMeta, MigrationInfo }
 import nl.knaw.dans.lib.dataverse.model.dataset.{ Dataset, DatasetCreationResult }
 import nl.knaw.dans.lib.dataverse.model.{ DefaultRole, RoleAssignment }
 import nl.knaw.dans.lib.dataverse.{ DataverseInstance, DataverseResponse }
-import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.error._
+import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
 import java.net.URI
+import java.util.Date
 import java.util.regex.Pattern
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
@@ -64,6 +65,12 @@ class DatasetCreator(deposit: Deposit,
           _ = debug(s"Assigning contributor role to ${ deposit.depositorUserId }")
           _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${ deposit.depositorUserId }", DefaultRole.contributor.toString))
           _ <- instance.dataset(persistentId).awaitUnlock()
+          dateAvailable <- deposit.getDateAvailable
+          _ <- if (isEmbargo(dateAvailable)) embargoAllFiles(persistentId, dateAvailable)
+               else {
+                 logger.debug(s"Date available in the past, no embargo: ${ dateAvailableFormat.format(dateAvailable) }")
+                 Success(())
+               }
         } yield persistentId
       }.doIfFailure {
         case NonFatal(e) =>
@@ -75,5 +82,14 @@ class DatasetCreator(deposit: Deposit,
 
   private def getPersistentId(response: DataverseResponse[DatasetCreationResult]): Try[String] = {
     response.data.map(_.persistentId)
+  }
+
+  private def embargoAllFiles(persistentId: PersistendId, dateAvailable: Date): Try[Unit] = {
+    logger.info(s"Putting embargo on all files until: ${ dateAvailableFormat.format(dateAvailable) }")
+    for {
+      files <- getAllFiles(persistentId)
+      _ <- embargoFiles(persistentId, dateAvailableFormat.format(dateAvailable), files)
+      _ <- instance.dataset(persistentId).awaitUnlock()
+    } yield ()
   }
 }

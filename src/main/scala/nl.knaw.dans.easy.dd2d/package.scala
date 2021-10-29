@@ -22,6 +22,7 @@ import org.apache.commons.io.FileUtils
 import org.apache.commons.lang.StringUtils
 
 import java.nio.charset.StandardCharsets
+import java.text.SimpleDateFormat
 import scala.collection.JavaConverters.{ asScalaBufferConverter, asScalaIteratorConverter }
 import scala.collection.mutable
 import scala.language.postfixOps
@@ -31,6 +32,8 @@ package object dd2d {
   type DepositName = String
   type Sha1Hash = String
   type DatabaseId = Int
+
+  val dateAvailableFormat = new SimpleDateFormat("yyyy-MM-dd")
 
   case class VaultMetadata(dataversePid: String, dataverseBagId: String, dataverseNbn: String, dataverseOtherId: String, dataverseOtherIdVersion: String, dataverseSwordToken: String) {
 
