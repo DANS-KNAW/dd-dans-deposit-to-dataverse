@@ -30,7 +30,7 @@ class CompoundFieldBuilder(name: String, multipleValues: Boolean = true) extends
 
   override def build(): Option[MetadataField] = {
     if (values.nonEmpty) Option(
-      if (multipleValues) CompoundField(name, values.toList)
+      if (multipleValues) CompoundField(name, values.toList.distinct)
       else CompoundField(name, values.head))
     else Option.empty
   }

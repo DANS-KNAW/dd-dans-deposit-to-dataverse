@@ -29,7 +29,7 @@ class CvFieldBuilder(name: String, multipleValues: Boolean = true) extends Abstr
 
   override def build(): Option[MetadataField] = {
     if (values.nonEmpty) {
-      if (multipleValues) Option(ControlledMultipleValueField(name, values.toList))
+      if (multipleValues) Option(ControlledMultipleValueField(name, values.toList.distinct))
       else Option(ControlledSingleValueField(name, values.head))
     }
     else Option.empty
