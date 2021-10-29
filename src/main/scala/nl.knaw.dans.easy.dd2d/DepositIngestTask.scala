@@ -46,6 +46,7 @@ import scala.xml.Elem
  */
 case class DepositIngestTask(deposit: Deposit,
                              optFileExclusionPattern: Option[Pattern],
+                             deduplicate: Boolean,
                              activeMetadataBlocks: List[String],
                              optDansBagValidator: Option[DansBagValidator],
                              instance: DataverseInstance,
@@ -61,7 +62,7 @@ case class DepositIngestTask(deposit: Deposit,
                              outboxDir: File) extends Task[Deposit] with DebugEnhancedLogging {
   trace(deposit)
 
-  private val datasetMetadataMapper = new DepositToDvDatasetMetadataMapper(activeMetadataBlocks, narcisClassification, iso1ToDataverseLanguage, iso2ToDataverseLanguage, repordIdToTerm)
+  private val datasetMetadataMapper = new DepositToDvDatasetMetadataMapper(deduplicate, activeMetadataBlocks, narcisClassification, iso1ToDataverseLanguage, iso2ToDataverseLanguage, repordIdToTerm)
   private val bagDirPath = File(deposit.bagDir.path)
 
   override def run(): Try[Unit] = {
