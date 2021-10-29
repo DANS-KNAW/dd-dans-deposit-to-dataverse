@@ -17,6 +17,7 @@ package nl.knaw.dans.easy.dd2d
 
 import nl.knaw.dans.easy.dd2d.mapping.{ AccessRights, License }
 import nl.knaw.dans.easy.dd2d.migrationinfo.BasicFileMeta
+import nl.knaw.dans.lib.dataverse.model.dataset.Embargo
 import nl.knaw.dans.lib.dataverse.model.file.FileMeta
 import nl.knaw.dans.lib.dataverse.model.file.prestaged.PrestagedFile
 import nl.knaw.dans.lib.dataverse.{ DatasetApi, DataverseInstance }
@@ -25,6 +26,7 @@ import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
 import java.net.URI
 import java.nio.file.{ Path, Paths }
+import java.util.Date
 import java.util.regex.Pattern
 import scala.util.{ Failure, Success, Try }
 
@@ -129,6 +131,22 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
                 |{ "http://schema.org/license": "${ License.getLicenseUri(supportedLicenses)(variantToNormalized)(optLicense.get).toASCIIString }" }
                 |""".stripMargin, replace = true)
     } yield ()
+  }
+
+  protected def getAllFiles(persistendId: PersistendId): Try[List[FileMeta]] = {
+    for {
+      r <- instance.dataset(persistendId).listFiles()
+      files <- r.data
+    } yield  files
+  }
+
+  protected def isEmbargo(date: Date): Boolean = {
+    date.compareTo(new Date()) > 0
+  }
+
+  protected def embargoFiles(persistendId: PersistendId, dateAvailable: Date, fileIds: List[Int]): Try[Unit] = {
+    trace(persistendId, fileIds)
+    instance.dataset(persistendId).setEmbargo(Embargo(dateAvailableFormat.format(dateAvailable), "", fileIds)).map(_ => ())
   }
 
   protected def deleteDraftIfExists(persistentId: String): Unit = {
