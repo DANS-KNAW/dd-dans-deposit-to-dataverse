@@ -92,6 +92,15 @@ Mappings for the following blocks have been defined:
 * Temporal and Spatial Coverage (`dansTemporalSpatial`)
 * Data Vault Metadata (`dansDataVaultMetadata`)
 
+#### Embargoes
+The element `ddm:available` in `dataset.xml` contains the date when the files in the dataset should become available. If it
+contains a future date, all the files in the deposit are placed under embargo, excluding the ones that have been released in a 
+previous version. The files that have been released in a previous version may have been placed under embargo when that version 
+was published. However, it is not possible to change that embargo by creating a new version.
+
+Although Dataverse allows you to set embargo at the file level, it is currently not possible to specify an embargo for specific
+files through the DANS deposit APIs.
+
 #### File level metadata
 The file level metadata is derived from the deposit as follows:
 

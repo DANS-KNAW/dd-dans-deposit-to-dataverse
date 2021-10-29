@@ -87,20 +87,31 @@ class DatasetUpdater(deposit: Deposit,
           _ <- deleteFiles(dataset, fileDeletions.toList)
 
           pathsToAdd = pathToFileInfo.keySet diff pathToFileMetaInLatestVersion.keySet diff oldToNewPathMovedFiles.values.toSet
-          fileAdditions <- addFiles(doi, pathsToAdd.map(pathToFileInfo).toList, prestagedFiles).map(_.mapValues(_.metadata))
+          filesToAdd = pathsToAdd.map(pathToFileInfo).toList
+          fileAdditions <- addFiles(doi, filesToAdd, prestagedFiles).map(_.mapValues(_.metadata))
 
           // TODO: what happens with file that only got a new description? Their MD will not be updated ??!!
           // TODO: probably just change this to: update the file md of all the files that are in the new version. Will DV show "null-replacements" in the differences view??
           _ <- updateFileMetadata(fileReplacements ++ fileMovements ++ fileAdditions)
           _ <- dataset.awaitUnlock()
 
+          dateAvailable <- deposit.getDateAvailable
+          _ <- if (isEmbargo(dateAvailable)) {
+            val fileIdsToEmbargo = fileReplacements.keys ++ fileAdditions.keys
+            logger.info(s"Embargoing new files until ${ dateAvailable }")
+            embargoFiles(doi, dateAvailable, fileIdsToEmbargo.toList)
+          }
+               else {
+                 logger.debug(s"Date available in the past, no embargo: $dateAvailable }")
+                 Success(())
+               }
           /*
            * Cannot enable requests if they were disallowed because of closed files in a previous version. However disabling is possible because a the update may add a closed file.
            */
           _ <- configureEnableAccessRequests(deposit, doi, canEnable = false)
         } yield doi
       }.doIfFailure {
-        case e: CannotUpdateDraftDatasetException =>  // Don't delete the draft that caused the failure
+        case e: CannotUpdateDraftDatasetException => // Don't delete the draft that caused the failure
         case NonFatal(e) =>
           logger.error("Dataset update failed, deleting draft", e)
           deleteDraftIfExists(doi)

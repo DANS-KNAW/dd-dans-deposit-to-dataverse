@@ -144,10 +144,10 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
     date.compareTo(new Date()) > 0
   }
 
-  protected def embargoFiles(persistendId: PersistendId, dateAvailable: String, files: List[FileMeta]): Try[Unit] = {
-    trace(persistendId, files)
-    instance.dataset(persistendId).setEmbargo(Embargo(dateAvailable, "", files.map(_.dataFile.get.id))).map(_ => ())
- }
+  protected def embargoFiles(persistendId: PersistendId, dateAvailable: Date, fileIds: List[Int]): Try[Unit] = {
+    trace(persistendId, fileIds)
+    instance.dataset(persistendId).setEmbargo(Embargo(dateAvailableFormat.format(dateAvailable), "", fileIds)).map(_ => ())
+  }
 
   protected def deleteDraftIfExists(persistentId: String): Unit = {
     val result = for {

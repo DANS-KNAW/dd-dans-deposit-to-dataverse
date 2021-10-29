@@ -68,7 +68,7 @@ class DatasetCreator(deposit: Deposit,
           dateAvailable <- deposit.getDateAvailable
           _ <- if (isEmbargo(dateAvailable)) embargoAllFiles(persistentId, dateAvailable)
                else {
-                 logger.debug(s"Date available in the past, no embargo: ${ dateAvailableFormat.format(dateAvailable) }")
+                 logger.debug(s"Date available in the past, no embargo: $dateAvailable")
                  Success(())
                }
         } yield persistentId
@@ -85,10 +85,10 @@ class DatasetCreator(deposit: Deposit,
   }
 
   private def embargoAllFiles(persistentId: PersistendId, dateAvailable: Date): Try[Unit] = {
-    logger.info(s"Putting embargo on all files until: ${ dateAvailableFormat.format(dateAvailable) }")
+    logger.info(s"Putting embargo on all files until: $dateAvailable }")
     for {
       files <- getAllFiles(persistentId)
-      _ <- embargoFiles(persistentId, dateAvailableFormat.format(dateAvailable), files)
+      _ <- embargoFiles(persistentId, dateAvailable, files.map(_.dataFile.get.id))
       _ <- instance.dataset(persistentId).awaitUnlock()
     } yield ()
   }
