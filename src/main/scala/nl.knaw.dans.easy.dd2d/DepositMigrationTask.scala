@@ -30,6 +30,7 @@ import scala.xml.{ Elem, Node }
 
 class DepositMigrationTask(deposit: Deposit,
                            optFileExclusionPattern: Option[Pattern],
+                           deduplicate: Boolean,
                            activeMetadataBlocks: List[String],
                            optDansBagValidator: Option[DansBagValidator],
                            instance: DataverseInstance,
@@ -45,6 +46,7 @@ class DepositMigrationTask(deposit: Deposit,
                            outboxDir: File)
   extends DepositIngestTask(deposit,
     optFileExclusionPattern,
+    deduplicate,
     activeMetadataBlocks,
     optDansBagValidator,
     instance,

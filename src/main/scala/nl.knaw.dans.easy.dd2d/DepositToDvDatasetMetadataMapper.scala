@@ -29,12 +29,14 @@ import scala.xml.{ Elem, Node, NodeSeq }
 /**
  * Creates dataset level metadata for Dataverse from information in the deposit.
  *
+ * @param deduplicate             deduplicate metadata values
  * @param activeMetadataBlocks    the metadata blocks that are active in the target dataverse
  * @param narcisClassification    NARCIS classification SKOS, currently not used
  * @param iso2ToDataverseLanguage map from ISO639-2 to the Dataverse language terms
  * @param reportIdToTerm          map from Cultureel Erfgoed Report Type ID to the human readable term
  */
-class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
+class DepositToDvDatasetMetadataMapper(deduplicate: Boolean,
+                                       activeMetadataBlocks: List[String],
                                        narcisClassification: Elem,
                                        iso1ToDataverseLanguage: Map[String, String],
                                        iso2ToDataverseLanguage: Map[String, String],
@@ -237,7 +239,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
 
   private def addMetadataBlock(versionMap: mutable.Map[String, MetadataBlock], blockId: String, blockDisplayName: String, fields: mutable.HashMap[String, AbstractFieldBuilder]): Unit = {
     if (fields.nonEmpty) {
-      versionMap.put(blockId, MetadataBlock(blockDisplayName, fields.values.map(_.build()).filter(_.isDefined).map(_.get).toList))
+      versionMap.put(blockId, MetadataBlock(blockDisplayName, fields.values.map(_.build(depublicate = deduplicate)).filter(_.isDefined).map(_.get).toList))
     }
   }
 }

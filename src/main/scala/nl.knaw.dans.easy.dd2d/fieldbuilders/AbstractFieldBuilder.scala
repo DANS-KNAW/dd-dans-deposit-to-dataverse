@@ -22,8 +22,9 @@ abstract class AbstractFieldBuilder {
   /**
    * Builds the field, if values are available for it.
    *
+   * @param depublicate remove duplicates from values
    * @return the MetadataField
    */
-  def build(): Option[MetadataField]
+  def build(depublicate: Boolean = false): Option[MetadataField]
 }
 

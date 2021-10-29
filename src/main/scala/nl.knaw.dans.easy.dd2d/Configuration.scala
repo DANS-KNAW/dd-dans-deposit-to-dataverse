@@ -46,7 +46,9 @@ case class Configuration(version: String,
                          iso2ToDataverseLanguage: Map[String, String],
                          reportIdToTerm: Map[String, String],
                          variantToLicense: Map[String, String],
-                         supportedLicenses: List[URI]
+                         supportedLicenses: List[URI],
+                         deduplicateImport: Boolean = true,
+                         deduplicateService: Boolean = false
                         )
 
 object Configuration {
@@ -115,7 +117,9 @@ object Configuration {
       iso2ToDataverseLanguage = loadCsvToMap(iso2ToDataverseLanguageMappingFile, keyColumn = "ISO639-2", valueColumn = "Dataverse-language").get,
       reportIdToTerm = loadCsvToMap(rapportIdToTermMappingFile, keyColumn = "URI-suffix", valueColumn = "Term").get,
       variantToLicense = loadCsvToMap(licenseUriVariantsFile, keyColumn = "Variant", valueColumn = "Normalized").get,
-      supportedLicenses = loadTxtToList(supportedLicensesFile).map(_.map(s => new URI(s))).get
+      supportedLicenses = loadTxtToList(supportedLicensesFile).map(_.map(s => new URI(s))).get,
+      deduplicateImport = properties.getBoolean("mapping.import.deduplicate"),
+      deduplicateService = properties.getBoolean("mapping.service.deduplicate")
     )
   }
 

@@ -28,9 +28,10 @@ class CompoundFieldBuilder(name: String, multipleValues: Boolean = true) extends
     values.append(v)
   }
 
-  override def build(): Option[MetadataField] = {
+  override def build(deduplicate: Boolean = false): Option[MetadataField] = {
     if (values.nonEmpty) Option(
-      if (multipleValues) CompoundField(name, values.toList)
+      if (multipleValues) CompoundField(name, if (deduplicate) values.toList.distinct
+                                              else values.toList)
       else CompoundField(name, values.head))
     else Option.empty
   }

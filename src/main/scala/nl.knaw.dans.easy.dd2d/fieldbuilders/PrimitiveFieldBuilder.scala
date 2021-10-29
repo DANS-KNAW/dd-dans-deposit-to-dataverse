@@ -27,9 +27,10 @@ class PrimitiveFieldBuilder(name: String, multipleValues: Boolean = true) extend
     values.append(v)
   }
 
-  override def build(): Option[MetadataField] = {
+  override def build(deduplicate: Boolean = false): Option[MetadataField] = {
     if (values.nonEmpty) {
-      if (multipleValues) Option(PrimitiveMultipleValueField(name, values.toList))
+      if (multipleValues) Option(PrimitiveMultipleValueField(name, if (deduplicate) values.toList.distinct
+                                                                   else values.toList))
       else Option(PrimitiveSingleValueField(name, values.head))
     }
     else Option.empty
