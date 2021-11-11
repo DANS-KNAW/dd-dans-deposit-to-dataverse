@@ -66,7 +66,7 @@ class DatasetCreator(deposit: Deposit,
           _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${ deposit.depositorUserId }", DefaultRole.contributor.toString))
           _ <- instance.dataset(persistentId).awaitUnlock()
           dateAvailable <- deposit.getDateAvailable
-          _ <- if (isEmbargo(dateAvailable)) embargoAllFiles(persistentId, dateAvailable)
+          _ <- if (isEmbargo(dateAvailable)) embargoFiles(persistentId, dateAvailable)
                else {
                  logger.debug(s"Date available in the past, no embargo: $dateAvailable")
                  Success(())
@@ -84,10 +84,10 @@ class DatasetCreator(deposit: Deposit,
     response.data.map(_.persistentId)
   }
 
-  private def embargoAllFiles(persistentId: PersistendId, dateAvailable: Date): Try[Unit] = {
-    logger.info(s"Putting embargo on all files until: $dateAvailable }")
+  private def embargoFiles(persistentId: PersistendId, dateAvailable: Date): Try[Unit] = {
+    logger.info(s"Putting embargo on files until: $dateAvailable")
     for {
-      files <- getAllFiles(persistentId)
+      files <- getFilesToEmbargo(persistentId)
       _ <- embargoFiles(persistentId, dateAvailable, files.map(_.dataFile.get.id))
       _ <- instance.dataset(persistentId).awaitUnlock()
     } yield ()

@@ -133,11 +133,12 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
     } yield ()
   }
 
-  protected def getAllFiles(persistendId: PersistendId): Try[List[FileMeta]] = {
+  protected def getFilesToEmbargo(persistendId: PersistendId): Try[List[FileMeta]] = {
     for {
       r <- instance.dataset(persistendId).listFiles()
       files <- r.data
-    } yield  files
+      filesToEmbargo = files.filter(f => f.directoryLabel.getOrElse(true).toString != "easy-migration")
+    } yield  filesToEmbargo
   }
 
   protected def isEmbargo(date: Date): Boolean = {
