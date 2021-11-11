@@ -97,7 +97,7 @@ class DatasetUpdater(deposit: Deposit,
 
           dateAvailable <- deposit.getDateAvailable
           _ <- if (isEmbargo(dateAvailable)) {
-            val fileIdsToEmbargo = (fileReplacements ++ fileAdditions).filter(f => f._2.directoryLabel.getOrElse(true).toString != "easy-migration").keys
+            val fileIdsToEmbargo = (fileReplacements ++ fileAdditions).filter(f => f._2.directoryLabel.getOrElse("") != "easy-migration").keys
             logger.info(s"Embargoing new files until $dateAvailable")
             embargoFiles(doi, dateAvailable, fileIdsToEmbargo.toList)
           }

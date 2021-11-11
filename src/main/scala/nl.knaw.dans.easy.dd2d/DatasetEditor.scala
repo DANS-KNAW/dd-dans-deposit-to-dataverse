@@ -137,7 +137,7 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
     for {
       r <- instance.dataset(persistendId).listFiles()
       files <- r.data
-      filesToEmbargo = files.filter(f => f.directoryLabel.getOrElse(true).toString != "easy-migration")
+      filesToEmbargo = files.filter(f => f.directoryLabel.getOrElse("") != "easy-migration")
     } yield  filesToEmbargo
   }
 
