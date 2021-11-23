@@ -74,7 +74,7 @@ class DatasetCreator(deposit: Deposit,
         } yield persistentId
       }.doIfFailure {
         case NonFatal(e) =>
-          logger.error("Dataset creation failed, deleting draft")
+          logger.error("Dataset creation failed, deleting draft", e)
           deleteDraftIfExists(persistentId)
       }
     }

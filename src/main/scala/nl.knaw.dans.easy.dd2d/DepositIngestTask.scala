@@ -205,9 +205,9 @@ case class DepositIngestTask(deposit: Deposit,
 
     def getDatasetState: Try[String] = {
       for {
-        response <- instance.dataset(persistentId).view()
-        dsv <- response.data
-        state = dsv.versionState
+        response <- instance.dataset(persistentId).viewLatestVersion()
+        ds <- response.data
+        state = ds.latestVersion.versionState
       } yield state.get
     }
 
