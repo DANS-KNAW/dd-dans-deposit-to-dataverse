@@ -22,6 +22,8 @@ import nl.knaw.dans.lib.dataverse.model.search.DatasetResultItem
 import nl.knaw.dans.lib.dataverse.{ DatasetApi, DataverseInstance, FileApi, Version }
 import nl.knaw.dans.lib.error.{ TraversableTryExtensions, TryExtensions }
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
+import org.json4s.{ DefaultFormats, Formats }
+import org.json4s.native.{ JsonParser, Serialization }
 
 import java.net.URI
 import java.nio.file.{ Path, Paths }
@@ -120,10 +122,14 @@ class DatasetUpdater(deposit: Deposit,
   }
 
   private def checkDatasetInPublishedState(datasetApi: DatasetApi): Try[Unit] = {
+    implicit val jsonFormats: Formats = DefaultFormats
     for {
       r <- datasetApi.viewLatestVersion()
       v <- r.data
-      _ <- if (v.latestVersion.versionState.contains("DRAFT")) Failure(CannotUpdateDraftDatasetException(deposit))
+      _ <- if (v.latestVersion.versionState.contains("DRAFT")) {
+        logger.error(s"v = ${Serialization.writePretty(v)}")
+        Failure(CannotUpdateDraftDatasetException(deposit))
+      }
            else Success(())
     } yield ()
   }
