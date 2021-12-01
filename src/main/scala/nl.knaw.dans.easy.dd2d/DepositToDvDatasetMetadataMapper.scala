@@ -66,9 +66,18 @@ class DepositToDvDatasetMetadataMapper(deduplicate: Boolean,
       addPrimitiveFieldSingleValue(citationFields, ALTERNATIVE_TITLE, alternativeTitles)
       addCompoundFieldMultipleValues(citationFields, OTHER_ID, DepositPropertiesVaultMetadata.toOtherIdValue(vaultMetadata.dataverseOtherId).toList)
       addCompoundFieldMultipleValues(citationFields, OTHER_ID, (ddm \ "dcmiMetadata" \ "identifier").filter(Identifier canBeMappedToOtherId), Identifier toOtherIdValue)
-      addCompoundFieldMultipleValues(citationFields, AUTHOR, ddm \ "profile" \ "creatorDetails" \ "author", DcxDaiAuthor toAuthorValueObject)
-      addCompoundFieldMultipleValues(citationFields, AUTHOR, ddm \ "profile" \ "creatorDetails" \ "organization", DcxDaiOrganization toAuthorValueObject)
-      addCompoundFieldMultipleValues(citationFields, AUTHOR, ddm \ "profile" \ "creator", Creator toAuthorValueObject)
+
+      // Loop over all creators to preserve the order in which they were entered
+      val creators = (ddm \ "profile" \ "_").filter(n => n.label == "creatorDetails" || n.label == "creator")
+      creators.foreach {
+        case node if node.label == "creatorDetails" && (node \ "author").nonEmpty =>
+          addCompoundFieldMultipleValues(citationFields, AUTHOR, node \ "author", DcxDaiAuthor toAuthorValueObject)
+        case node if node.label == "creatorDetails" && (node \ "organization").nonEmpty =>
+          addCompoundFieldMultipleValues(citationFields, AUTHOR, node \ "organization", DcxDaiOrganization toAuthorValueObject)
+        case node if node.label == "creator" =>
+          addCompoundFieldMultipleValues(citationFields, AUTHOR, node, Creator toAuthorValueObject)
+      }
+
       addCompoundFieldMultipleValues(citationFields, DATASET_CONTACT, contactData)
       addCompoundFieldMultipleValues(citationFields, DESCRIPTION, ddm \ "profile" \ "description", Description toDescriptionValueObject)
       addCompoundFieldMultipleValues(citationFields, DESCRIPTION, if (alternativeTitles.isEmpty) NodeSeq.Empty
@@ -90,9 +99,17 @@ class DepositToDvDatasetMetadataMapper(deduplicate: Boolean,
       addCompoundFieldMultipleValues(citationFields, KEYWORD, (ddm \ "dcmiMetadata" \ "language").filterNot(Language isIsoLanguage), Language toKeywordValue)
       addCvFieldMultipleValues(citationFields, LANGUAGE, ddm \ "dcmiMetadata" \ "language", Language.toCitationBlockLanguage(iso1ToDataverseLanguage, iso2ToDataverseLanguage))
       addPrimitiveFieldSingleValue(citationFields, PRODUCTION_DATE, ddm \ "profile" \ "created", DateTypeElement toYearMonthDayFormat)
-      addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "author").filterNot(DcxDaiAuthor isRightsHolder), DcxDaiAuthor toContributorValueObject)
-      addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "organization").filterNot(DcxDaiOrganization isRightsHolder), DcxDaiOrganization toContributorValueObject)
-      addCompoundFieldMultipleValues(citationFields, DISTRIBUTOR, ddm \ "dcmiMetadata" \ "publisher",  Publisher toDistributorValueObject)
+
+      // Loop over all contributors to preserve the order in which they were entered
+      val contributors = ddm \ "dcmiMetadata" \ "contributorDetails"
+      contributors.foreach {
+        case node if node.label == "contributorDetails" && (node \ "author").nonEmpty =>
+          (node \ "author").filterNot(DcxDaiAuthor isRightsHolder).foreach(author => addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, author, DcxDaiAuthor toAuthorValueObject))
+        case node if node.label == "contributorDetails" && (node \ "organization").nonEmpty =>
+          (node \ "organization").filterNot(DcxDaiOrganization isRightsHolder).foreach(organization => addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, organization, DcxDaiOrganization toAuthorValueObject))
+      }
+
+      addCompoundFieldMultipleValues(citationFields, DISTRIBUTOR, ddm \ "dcmiMetadata" \ "publisher", Publisher toDistributorValueObject)
       addPrimitiveFieldSingleValue(citationFields, DISTRIBUTION_DATE, ddm \ "profile" \ "available", DateTypeElement toYearMonthDayFormat)
 
       addPrimitiveFieldSingleValue(citationFields, DATE_OF_DEPOSIT, optDateOfDeposit)
