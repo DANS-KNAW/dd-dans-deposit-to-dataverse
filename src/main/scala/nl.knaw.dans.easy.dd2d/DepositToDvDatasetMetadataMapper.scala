@@ -92,6 +92,7 @@ class DepositToDvDatasetMetadataMapper(deduplicate: Boolean,
       addPrimitiveFieldSingleValue(citationFields, PRODUCTION_DATE, ddm \ "profile" \ "created", DateTypeElement toYearMonthDayFormat)
       addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "author").filterNot(DcxDaiAuthor isRightsHolder), DcxDaiAuthor toContributorValueObject)
       addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "organization").filterNot(DcxDaiOrganization isRightsHolder), DcxDaiOrganization toContributorValueObject)
+      addCompoundFieldMultipleValues(citationFields, DISTRIBUTOR, ddm \ "dcmiMetadata" \ "publisher",  Publisher toDistributorValueObject)
       addPrimitiveFieldSingleValue(citationFields, DISTRIBUTION_DATE, ddm \ "profile" \ "available", DateTypeElement toYearMonthDayFormat)
 
       addPrimitiveFieldSingleValue(citationFields, DATE_OF_DEPOSIT, optDateOfDeposit)
