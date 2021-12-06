@@ -96,8 +96,7 @@ object DcxDaiAuthor extends Contributor with BlockCitation {
   }
 
   private def formatName(author: Author): String = {
-    List(author.titles.getOrElse(""),
-      author.initials.getOrElse(""),
+    List(author.initials.getOrElse(""),
       author.insertions.getOrElse(""),
       author.surname.getOrElse(""))
       .mkString(" ").trim().replaceAll("\\s+", " ")

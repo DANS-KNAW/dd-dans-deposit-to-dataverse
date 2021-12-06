@@ -121,12 +121,12 @@ class DepositToDataverseMapperSpec extends TestSupportFixture {
         val valueObjectsOfCompoundFields = dsv.metadataBlocks("citation").fields.filter(_.isInstanceOf[CompoundField]).map(_.asInstanceOf[CompoundField]).flatMap(_.value)
         valueObjectsOfCompoundFields should contain(
           Map(
-            "authorName" -> PrimitiveSingleValueField("authorName", "Dr A van Helsing"),
+            "authorName" -> PrimitiveSingleValueField("authorName", "A van Helsing"),
             "authorAffiliation" -> PrimitiveSingleValueField("authorAffiliation", "Anti-Vampire League")
           ))
         valueObjectsOfCompoundFields should contain(
           Map(
-            "authorName" -> PrimitiveSingleValueField("authorName", "Professor T Zonnebloem"),
+            "authorName" -> PrimitiveSingleValueField("authorName", "T Zonnebloem"),
             "authorAffiliation" -> PrimitiveSingleValueField("authorAffiliation", "Uitvindersgilde")
           ))
     }
