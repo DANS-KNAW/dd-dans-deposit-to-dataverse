@@ -104,9 +104,9 @@ class DepositToDvDatasetMetadataMapper(deduplicate: Boolean,
       val contributors = ddm \ "dcmiMetadata" \ "contributorDetails"
       contributors.foreach {
         case node if node.label == "contributorDetails" && (node \ "author").nonEmpty =>
-          (node \ "author").filterNot(DcxDaiAuthor isRightsHolder).foreach(author => addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, author, DcxDaiAuthor toAuthorValueObject))
+          (node \ "author").filterNot(DcxDaiAuthor isRightsHolder).foreach(author => addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, author, DcxDaiAuthor toContributorValueObject))
         case node if node.label == "contributorDetails" && (node \ "organization").nonEmpty =>
-          (node \ "organization").filterNot(DcxDaiOrganization isRightsHolder).foreach(organization => addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, organization, DcxDaiOrganization toAuthorValueObject))
+          (node \ "organization").filterNot(DcxDaiOrganization isRightsHolder).foreach(organization => addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, organization, DcxDaiOrganization toContributorValueObject))
       }
 
       addCompoundFieldMultipleValues(citationFields, DISTRIBUTOR, ddm \ "dcmiMetadata" \ "publisher", Publisher toDistributorValueObject)
