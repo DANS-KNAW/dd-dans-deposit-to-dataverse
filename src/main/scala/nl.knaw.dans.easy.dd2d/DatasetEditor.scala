@@ -105,7 +105,12 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
 
   protected def updateFileMetadata(databaseIdToFileInfo: Map[Int, FileMeta]): Try[Unit] = {
     trace(databaseIdToFileInfo)
-    databaseIdToFileInfo.map { case (id, fileMeta) => instance.file(id).updateMetadata(fileMeta) }.collectResults.map(_ => ())
+    databaseIdToFileInfo.map { case (id, fileMeta) => {
+      val r = instance.file(id).updateMetadata(fileMeta)
+      debug(s"id = $id, result = $r")
+      r
+    }
+    }.collectResults.map(_ => ())
   }
 
   protected def configureEnableAccessRequests(deposit: Deposit, persistendId: PersistendId, canEnable: Boolean): Try[Unit] = {
@@ -138,7 +143,7 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
       r <- instance.dataset(persistendId).listFiles()
       files <- r.data
       filesToEmbargo = files.filter(f => f.directoryLabel.getOrElse("") != "easy-migration")
-    } yield  filesToEmbargo
+    } yield filesToEmbargo
   }
 
   protected def isEmbargo(date: Date): Boolean = {

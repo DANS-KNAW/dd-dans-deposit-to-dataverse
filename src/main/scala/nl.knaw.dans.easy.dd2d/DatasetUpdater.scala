@@ -74,22 +74,26 @@ class DatasetUpdater(deposit: Deposit,
           numPub <- getNumberOfPublishedVersions(dataset)
           _ = debug(s"Number of published versions so far: $numPub")
           prestagedFiles <- optMigrationInfoService.map(_.getPrestagedDataFilesFor(doi, numPub + 1)).getOrElse(Success(Set.empty[BasicFileMeta]))
-          filesToReplace <- getFilesToReplace(pathToFileInfo, pathToFileMetaInLatestVersion)
-          fileReplacements <- replaceFiles(dataset, filesToReplace, prestagedFiles)
-          _ = debug(s"fileReplacements = $fileReplacements")
 
           oldToNewPathMovedFiles <- getOldToNewPathOfFilesToMove(pathToFileMetaInLatestVersion, pathToFileInfo)
           fileMovements = oldToNewPathMovedFiles.map { case (old, newPath) => (pathToFileMetaInLatestVersion(old).dataFile.get.id, pathToFileInfo(newPath).metadata) }
           // Movement will be realized by updating label and directoryLabel attributes of the file; there is no separate "move-file" API endpoint.
           _ = debug(s"fileMovements = $fileMovements")
 
+          fileReplacementCandidates = pathToFileMetaInLatestVersion.filterNot { case (path, _) => oldToNewPathMovedFiles.keySet.contains(path) }
+          filesToReplace <- getFilesToReplace(pathToFileInfo, fileReplacementCandidates)
+          fileReplacements <- replaceFiles(dataset, filesToReplace, prestagedFiles)
+          _ = debug(s"fileReplacements = $fileReplacements")
+
           pathsToDelete = pathToFileMetaInLatestVersion.keySet diff pathToFileInfo.keySet diff oldToNewPathMovedFiles.keySet
           fileDeletions <- getFileDeletions(pathsToDelete, pathToFileMetaInLatestVersion)
           _ = debug(s"fileDeletions = $fileDeletions")
           _ <- deleteFiles(dataset, fileDeletions.toList)
 
-          pathsToAdd = pathToFileInfo.keySet diff pathToFileMetaInLatestVersion.keySet diff oldToNewPathMovedFiles.values.toSet
+          occupiedPaths = (pathToFileMetaInLatestVersion.keySet diff oldToNewPathMovedFiles.keySet) union oldToNewPathMovedFiles.values.toSet
+          pathsToAdd = pathToFileInfo.keySet diff occupiedPaths
           filesToAdd = pathsToAdd.map(pathToFileInfo).toList
+          _ = debug(s"filesToAdd = $filesToAdd")
           fileAdditions <- addFiles(doi, filesToAdd, prestagedFiles).map(_.mapValues(_.metadata))
 
           // TODO: what happens with file that only got a new description? Their MD will not be updated ??!!
