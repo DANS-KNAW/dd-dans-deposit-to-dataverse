@@ -83,12 +83,19 @@ class DatasetUpdater(deposit: Deposit,
 
           // The old paths of moved files must be excluded from possible replacement candidates. A file has been moved can not also be replaced
           // in the same update
-          fileReplacementCandidates = pathToFileMetaInLatestVersion.filterNot { case (path, _) => oldToNewPathMovedFiles.keySet.contains(path) }
+          fileReplacementCandidates = pathToFileMetaInLatestVersion
+            .filterNot { case (path, _) => oldToNewPathMovedFiles.keySet.contains(path) }
+            .filterNot { case (path, _) => oldToNewPathMovedFiles.values.toSet.contains(path) }
           filesToReplace <- getFilesToReplace(pathToFileInfo, fileReplacementCandidates)
           fileReplacements <- replaceFiles(dataset, filesToReplace, prestagedFiles)
           _ = debug(s"fileReplacements = $fileReplacements")
 
-          pathsToDelete = pathToFileMetaInLatestVersion.keySet diff pathToFileInfo.keySet diff oldToNewPathMovedFiles.keySet
+          /*
+           * To find the files to delete, we need to take into account:
+           *
+           */
+          candidateRemainingFiles = pathToFileInfo.keySet diff oldToNewPathMovedFiles.values.toSet
+          pathsToDelete = pathToFileMetaInLatestVersion.keySet diff candidateRemainingFiles diff oldToNewPathMovedFiles.keySet
           _ = debug(s"pathsToDelete = $pathsToDelete")
           fileDeletions <- getFileDeletions(pathsToDelete, pathToFileMetaInLatestVersion)
           _ = debug(s"fileDeletions = $fileDeletions")
