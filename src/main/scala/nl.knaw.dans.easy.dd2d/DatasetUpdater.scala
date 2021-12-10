@@ -41,7 +41,7 @@ class DatasetUpdater(deposit: Deposit,
                      optMigrationInfoService: Option[MigrationInfo]) extends DatasetEditor(instance, optFileExclusionPattern) with DebugEnhancedLogging {
   trace(deposit)
 
-  override def performEdit(): Try[PersistendId] = {
+  override def performEdit(): Try[PersistentId] = {
     {
       for {
         doi <- if (isMigration) Try { deposit.dataversePid }
