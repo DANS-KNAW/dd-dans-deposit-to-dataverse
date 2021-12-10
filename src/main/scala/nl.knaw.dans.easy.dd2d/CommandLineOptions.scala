@@ -29,8 +29,8 @@ class CommandLineOptions(args: Array[String], configuration: Configuration) exte
   val synopsis: String =
     s"""
        |  $printedName run-service
-       |  $printedName import [--skip-validation] [-c,--continue] <inbox> <outbox>
-       |  $printedName import [--skip-validation] -s <single-deposit> <outbox>
+       |  $printedName import [--skip-validation] [-c,--continue] [-p,--prestaged-files] <inbox> <outbox>
+       |  $printedName import [--skip-validation] [-p,--prestaged-files] -s <single-deposit> <outbox>
        |  """.stripMargin
 
   version(s"$printedName v${ configuration.version }")
@@ -56,6 +56,7 @@ class CommandLineOptions(args: Array[String], configuration: Configuration) exte
     descr("Imports one ore more deposits. Does not monitor for new deposits to arrive, but instead terminates after importing the batch.")
     val singleDeposit: ScallopOption[Boolean] = opt(name = "single", descr = "Single deposit instead of a deposits inbox")
     val continue: ScallopOption[Boolean] = opt(name = "continue", descr = "Continue previous import, suppress check for empty outbox.")
+    val prestagedFiles: ScallopOption[Boolean] = opt(name = "prestaged-files", descr = "Include prestaged files.")
     val skipValidation: ScallopOption[Boolean] = opt(name = "skip-validation", descr = "Skip calling easy-validate-dans-bag")
     val depositsInboxOrSingleDeposit: ScallopOption[Path] = trailArg(name = "inbox-or-single-deposit",
       descr = "Directory containing as sub-directories the deposit dirs to be imported or a single deposit")

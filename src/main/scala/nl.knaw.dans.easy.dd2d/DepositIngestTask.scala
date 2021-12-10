@@ -45,6 +45,7 @@ import scala.xml.Elem
  * @param instance the Dataverse instance to ingest in
  */
 case class DepositIngestTask(deposit: Deposit,
+                             prestagedFiles: Boolean,
                              optFileExclusionPattern: Option[Pattern],
                              deduplicate: Boolean,
                              activeMetadataBlocks: List[String],
@@ -174,11 +175,11 @@ case class DepositIngestTask(deposit: Deposit,
   }
 
   protected def newDatasetUpdater(dataverseDataset: Dataset): DatasetUpdater = {
-    new DatasetUpdater(deposit, optFileExclusionPattern, isMigration = false, dataverseDataset.datasetVersion.metadataBlocks, variantToLicense, supportedLicenses, instance, Option.empty)
+    new DatasetUpdater(deposit, optFileExclusionPattern, isMigration = false, prestagedFiles, dataverseDataset.datasetVersion.metadataBlocks, variantToLicense, supportedLicenses, instance, Option.empty)
   }
 
   protected def newDatasetCreator(dataverseDataset: Dataset): DatasetCreator = {
-    new DatasetCreator(deposit, optFileExclusionPattern, isMigration = false, dataverseDataset, variantToLicense, supportedLicenses, instance, Option.empty)
+    new DatasetCreator(deposit, optFileExclusionPattern, isMigration = false, prestagedFiles, dataverseDataset, variantToLicense, supportedLicenses, instance, Option.empty)
   }
 
   protected def publishDataset(persistentId: String): Try[Unit] = {

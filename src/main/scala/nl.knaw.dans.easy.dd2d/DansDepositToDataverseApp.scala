@@ -38,6 +38,7 @@ class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhan
     new InboxWatcher(new Inbox(configuration.inboxDir,
       new DepositIngestTaskFactory(
         isMigrated = false,
+        false,
         configuration.optFileExclusionPattern,
         configuration.deduplicateService,
         configuration.deduplicateImport,
@@ -56,23 +57,29 @@ class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhan
         configuration.outboxDir)))
   }
 
-  private def checkPreconditions(skipValidation: Boolean = false): Try[Unit] = {
+  private def checkPreconditions(skipValidation: Boolean = false, prestagedFiles: Boolean): Try[Unit] = {
     for {
       _ <- if (skipValidation) Success(())
            else dansBagValidator.checkConnection()
+      _ <- if (prestagedFiles) migrationInfo.checkConnection()
+           else {
+             logger.warn("IMPORT WITHOUT PRE-STAGED FILES")
+             Success(())
+           }
       _ <- dataverse.checkConnection()
     } yield ()
   }
 
-  def importSingleDeposit(deposit: File, outboxDir: File, skipValidation: Boolean): Try[Unit] = {
+  def importSingleDeposit(deposit: File, outboxDir: File, skipValidation: Boolean, prestagedFiles: Boolean): Try[Unit] = {
     trace(deposit, outboxDir)
     for {
-      - <- checkPreconditions(skipValidation)
+      - <- checkPreconditions(skipValidation, prestagedFiles)
       _ <- initOutboxDirs(outboxDir, requireAbsenceOfResults = false)
       - <- mustNotExist(OutboxSubdir.values.map(_.toString).map(subdir => outboxDir / subdir / deposit.name).toList)
       _ <- new SingleDepositProcessor(deposit,
         new DepositIngestTaskFactory(
           isMigrated = true,
+          prestagedFiles,
           configuration.optFileExclusionPattern,
           configuration.deduplicateService,
           configuration.deduplicateImport,
@@ -93,14 +100,15 @@ class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhan
     } yield ()
   }
 
-  def importDeposits(inbox: File, outboxDir: File, requireAbsenceOfResults: Boolean = true, skipValidation: Boolean = false): Try[Unit] = {
+  def importDeposits(inbox: File, outboxDir: File, requireAbsenceOfResults: Boolean = true, skipValidation: Boolean = false, prestagedFiles: Boolean): Try[Unit] = {
     trace(inbox, outboxDir, requireAbsenceOfResults)
     for {
-      _ <- checkPreconditions(skipValidation)
+      _ <- checkPreconditions(skipValidation, prestagedFiles)
       _ <- initOutboxDirs(outboxDir, requireAbsenceOfResults)
       _ <- new InboxProcessor(new Inbox(inbox,
         new DepositIngestTaskFactory(
           isMigrated = true,
+          prestagedFiles,
           configuration.optFileExclusionPattern,
           configuration.deduplicateService,
           configuration.deduplicateImport,

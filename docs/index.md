@@ -6,8 +6,8 @@ SYNOPSIS
 --------
 
     dd-dans-deposit-to-dataverse run-service
-    dd-dans-deposit-to-dataverse import [--skip-validation] [-c,--continue] <inbox> <outbox>
-    dd-dans-deposit-to-dataverse import [--skip-validation] -s <single-deposit> <outbox>
+    dd-dans-deposit-to-dataverse import [--skip-validation] [-c,--continue] [-p,--prestaged-files] <inbox> <outbox>
+    dd-dans-deposit-to-dataverse import [--skip-validation] [-p,--prestaged-files] -s <single-deposit> <outbox>
 
 DESCRIPTION
 -----------

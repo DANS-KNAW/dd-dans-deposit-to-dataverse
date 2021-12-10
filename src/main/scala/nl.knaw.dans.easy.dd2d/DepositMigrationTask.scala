@@ -29,6 +29,7 @@ import scala.util.{ Failure, Success, Try }
 import scala.xml.{ Elem, Node }
 
 class DepositMigrationTask(deposit: Deposit,
+                           prestagedFiles: Boolean,
                            optFileExclusionPattern: Option[Pattern],
                            deduplicate: Boolean,
                            activeMetadataBlocks: List[String],
@@ -45,6 +46,7 @@ class DepositMigrationTask(deposit: Deposit,
                            repordIdToTerm: Map[String, String],
                            outboxDir: File)
   extends DepositIngestTask(deposit,
+    prestagedFiles,
     optFileExclusionPattern,
     deduplicate,
     activeMetadataBlocks,
@@ -70,11 +72,11 @@ class DepositMigrationTask(deposit: Deposit,
   }
 
   override def newDatasetUpdater(dataverseDataset: Dataset): DatasetUpdater = {
-    new DatasetUpdater(deposit, optFileExclusionPattern, isMigration = true, dataverseDataset.datasetVersion.metadataBlocks, variantToLicense, supportedLicenses, instance, migrationInfo)
+    new DatasetUpdater(deposit, optFileExclusionPattern, isMigration = true, prestagedFiles, dataverseDataset.datasetVersion.metadataBlocks, variantToLicense, supportedLicenses, instance, migrationInfo)
   }
 
   override def newDatasetCreator(dataverseDataset: Dataset): DatasetCreator = {
-    new DatasetCreator(deposit, optFileExclusionPattern, isMigration = true, dataverseDataset, variantToLicense, supportedLicenses, instance, migrationInfo)
+    new DatasetCreator(deposit, optFileExclusionPattern, isMigration = true, prestagedFiles, dataverseDataset, variantToLicense, supportedLicenses, instance, migrationInfo)
   }
 
   override protected def getDateOfDeposit: Try[Option[String]] = {

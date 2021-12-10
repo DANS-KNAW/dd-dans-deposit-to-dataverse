@@ -34,6 +34,7 @@ import scala.util.{ Failure, Success, Try }
 class DatasetUpdater(deposit: Deposit,
                      optFileExclusionPattern: Option[Pattern],
                      isMigration: Boolean = false,
+                     prestagedFiles: Boolean,
                      metadataBlocks: MetadataBlocks,
                      variantToLicense: Map[String, String],
                      supportedLicenses: List[URI],
@@ -73,7 +74,8 @@ class DatasetUpdater(deposit: Deposit,
 
           numPub <- getNumberOfPublishedVersions(dataset)
           _ = debug(s"Number of published versions so far: $numPub")
-          prestagedFiles <- optMigrationInfoService.map(_.getPrestagedDataFilesFor(doi, numPub + 1)).getOrElse(Success(Set.empty[BasicFileMeta]))
+          prestagedFiles <- if (prestagedFiles) optMigrationInfoService.map(_.getPrestagedDataFilesFor(doi, numPub + 1)).getOrElse(Success(Set.empty[BasicFileMeta]))
+                            else Success(Set.empty[BasicFileMeta])
           filesToReplace <- getFilesToReplace(pathToFileInfo, pathToFileMetaInLatestVersion)
           fileReplacements <- replaceFiles(dataset, filesToReplace, prestagedFiles)
           _ = debug(s"fileReplacements = $fileReplacements")
