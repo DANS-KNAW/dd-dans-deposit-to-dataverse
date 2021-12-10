@@ -28,13 +28,14 @@ import java.net.URI
 import java.nio.file.{ Path, Paths }
 import java.util.Date
 import java.util.regex.Pattern
+import scala.collection.mutable
 import scala.util.{ Failure, Success, Try }
 
 /**
  * Object that edits a dataset, a new draft.
  */
 abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPattern: Option[Pattern]) extends DebugEnhancedLogging {
-  type PersistendId = String
+  type PersistentId = String
   type DatasetId = Int
 
   /**
@@ -42,18 +43,18 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
    *
    * @return the persistentId of the dataset created or modified
    */
-  def performEdit(): Try[PersistendId]
+  def performEdit(): Try[PersistentId]
 
-  protected def addFiles(persistentId: String, files: List[FileInfo], prestagedFiles: Set[BasicFileMeta] = Set.empty): Try[Map[Int, FileInfo]] = {
+  protected def addFiles(persistentId: String, files: List[FileInfo], prestagedFiles: Set[BasicFileMeta] = Set.empty): Try[Map[Int, FileInfo]] = Try {
     trace(persistentId, files)
-    files
-      .map(f => {
-        debug(s"Adding file, directoryLabel = ${ f.metadata.directoryLabel }, label = ${ f.metadata.label }")
-        for {
-          id <- addFile(persistentId, f, prestagedFiles)
-          _ <- instance.dataset(persistentId).awaitUnlock()
-        } yield (id -> f)
-      }).collectResults.map(_.toMap)
+    val result = mutable.Map[Int, FileInfo]()
+    for (f <- files) {
+      debug(s"Adding file, directoryLabel = ${ f.metadata.directoryLabel }, label = ${ f.metadata.label }")
+      val id = addFile(persistentId, f, prestagedFiles).get
+      instance.dataset(persistentId).awaitUnlock().unsafeGetOrThrow
+      result(id) = f
+    }
+    result.toMap
   }
 
   private def addFile(doi: String, fileInfo: FileInfo, prestagedFiles: Set[BasicFileMeta]): Try[Int] = {
@@ -105,10 +106,15 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
 
   protected def updateFileMetadata(databaseIdToFileInfo: Map[Int, FileMeta]): Try[Unit] = {
     trace(databaseIdToFileInfo)
-    databaseIdToFileInfo.map { case (id, fileMeta) => instance.file(id).updateMetadata(fileMeta) }.collectResults.map(_ => ())
+    databaseIdToFileInfo.map { case (id, fileMeta) => {
+      val r = instance.file(id).updateMetadata(fileMeta)
+      debug(s"id = $id, result = $r")
+      r
+    }
+    }.collectResults.map(_ => ())
   }
 
-  protected def configureEnableAccessRequests(deposit: Deposit, persistendId: PersistendId, canEnable: Boolean): Try[Unit] = {
+  protected def configureEnableAccessRequests(deposit: Deposit, persistendId: PersistentId, canEnable: Boolean): Try[Unit] = {
     for {
       ddm <- deposit.tryDdm
       files <- deposit.tryFilesXml
@@ -133,19 +139,19 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
     } yield ()
   }
 
-  protected def getFilesToEmbargo(persistendId: PersistendId): Try[List[FileMeta]] = {
+  protected def getFilesToEmbargo(persistendId: PersistentId): Try[List[FileMeta]] = {
     for {
       r <- instance.dataset(persistendId).listFiles()
       files <- r.data
       filesToEmbargo = files.filter(f => f.directoryLabel.getOrElse("") != "easy-migration")
-    } yield  filesToEmbargo
+    } yield filesToEmbargo
   }
 
   protected def isEmbargo(date: Date): Boolean = {
     date.compareTo(new Date()) > 0
   }
 
-  protected def embargoFiles(persistendId: PersistendId, dateAvailable: Date, fileIds: List[Int]): Try[Unit] = {
+  protected def embargoFiles(persistendId: PersistentId, dateAvailable: Date, fileIds: List[Int]): Try[Unit] = {
     trace(persistendId, fileIds)
     instance.dataset(persistendId).setEmbargo(Embargo(dateAvailableFormat.format(dateAvailable), "", fileIds)).map(_ => ())
   }
@@ -163,7 +169,7 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
     }
   }
 
-  private def deleteDraft(persistentId: PersistendId): Try[Unit] = {
+  private def deleteDraft(persistentId: PersistentId): Try[Unit] = {
     for {
       r <- instance.dataset(persistentId).deleteDraft()
       _ = logger.info(s"DRAFT deleted")

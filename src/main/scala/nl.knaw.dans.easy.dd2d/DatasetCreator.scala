@@ -38,7 +38,7 @@ class DatasetCreator(deposit: Deposit,
                      optMigrationInfoService: Option[MigrationInfo]) extends DatasetEditor(instance, optFileExclusionPattern) with DebugEnhancedLogging {
   trace(deposit)
 
-  override def performEdit(): Try[PersistendId] = {
+  override def performEdit(): Try[PersistentId] = {
     {
       for {
         // autoPublish is false, because it seems there is a bug with it in Dataverse (most of the time?)
@@ -84,7 +84,7 @@ class DatasetCreator(deposit: Deposit,
     response.data.map(_.persistentId)
   }
 
-  private def embargoFiles(persistentId: PersistendId, dateAvailable: Date): Try[Unit] = {
+  private def embargoFiles(persistentId: PersistentId, dateAvailable: Date): Try[Unit] = {
     logger.info(s"Putting embargo on files until: $dateAvailable")
     for {
       files <- getFilesToEmbargo(persistentId)

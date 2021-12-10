@@ -22,8 +22,8 @@ import nl.knaw.dans.lib.dataverse.model.search.DatasetResultItem
 import nl.knaw.dans.lib.dataverse.{ DatasetApi, DataverseInstance, FileApi, Version }
 import nl.knaw.dans.lib.error.{ TraversableTryExtensions, TryExtensions }
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
+import org.json4s.native.Serialization
 import org.json4s.{ DefaultFormats, Formats }
-import org.json4s.native.{ JsonParser, Serialization }
 
 import java.net.URI
 import java.nio.file.{ Path, Paths }
@@ -41,7 +41,7 @@ class DatasetUpdater(deposit: Deposit,
                      optMigrationInfoService: Option[MigrationInfo]) extends DatasetEditor(instance, optFileExclusionPattern) with DebugEnhancedLogging {
   trace(deposit)
 
-  override def performEdit(): Try[PersistendId] = {
+  override def performEdit(): Try[PersistentId] = {
     {
       for {
         doi <- if (isMigration) Try { deposit.dataversePid }
@@ -58,6 +58,7 @@ class DatasetUpdater(deposit: Deposit,
            * just overwrites it, becoming V1.
            */
           - <- Try { Thread.sleep(3000) }
+          // TODO: library should provide function waitForIndexing that uses the @Path("{identifier}/timestamps") endpoint on Datasets
           _ <- dataset.awaitUnlock()
           _ <- checkDatasetInPublishedState(dataset)
           _ <- dataset.updateMetadata(metadataBlocks)
@@ -74,26 +75,68 @@ class DatasetUpdater(deposit: Deposit,
           numPub <- getNumberOfPublishedVersions(dataset)
           _ = debug(s"Number of published versions so far: $numPub")
           prestagedFiles <- optMigrationInfoService.map(_.getPrestagedDataFilesFor(doi, numPub + 1)).getOrElse(Success(Set.empty[BasicFileMeta]))
-          filesToReplace <- getFilesToReplace(pathToFileInfo, pathToFileMetaInLatestVersion)
-          fileReplacements <- replaceFiles(dataset, filesToReplace, prestagedFiles)
-          _ = debug(s"fileReplacements = $fileReplacements")
 
           oldToNewPathMovedFiles <- getOldToNewPathOfFilesToMove(pathToFileMetaInLatestVersion, pathToFileInfo)
           fileMovements = oldToNewPathMovedFiles.map { case (old, newPath) => (pathToFileMetaInLatestVersion(old).dataFile.get.id, pathToFileInfo(newPath).metadata) }
           // Movement will be realized by updating label and directoryLabel attributes of the file; there is no separate "move-file" API endpoint.
           _ = debug(s"fileMovements = $fileMovements")
 
-          pathsToDelete = pathToFileMetaInLatestVersion.keySet diff pathToFileInfo.keySet diff oldToNewPathMovedFiles.keySet
+          /*
+           * File replacement can only happen on files with paths that are not also involved in a rename/move action. Otherwise we end up with:
+           *
+           * - trying to update the file metadata by a database ID that is not the "HEAD" of a file version history (which Dataverse doesn't allow anyway, it
+           * fails with "You cannot edit metadata on a dataFile that has been replaced"). This happens when a file A is renamed to B, but a different file A
+           * is also added in the same update.
+           *
+           * - trying to add a file with a name that already exists. This happens when a file A is renamed to B, while B is also part of the latest version
+           */
+          fileReplacementCandidates = pathToFileMetaInLatestVersion
+            .filterNot { case (path, _) => oldToNewPathMovedFiles.keySet.contains(path) } // remove old paths of moved files
+            .filterNot { case (path, _) => oldToNewPathMovedFiles.values.toSet.contains(path) } // remove new paths of moved files
+          filesToReplace <- getFilesToReplace(pathToFileInfo, fileReplacementCandidates)
+          fileReplacements <- replaceFiles(dataset, filesToReplace, prestagedFiles)
+          _ = debug(s"fileReplacements = $fileReplacements")
+
+          /*
+           * To find the files to delete we start from the paths in the deposit payload. In principle, these paths are remaining, so should NOT be deleted.
+           * However, if a file is moved/renamed to a path that was also present in the latest version, then the old file at that path must first be deleted
+           * (and must therefore NOT included in candidateRemainingFiles). Otherwise we'll end up trying to use an existing (directoryLabel, label) pair.
+           */
+          candidateRemainingFiles = pathToFileInfo.keySet diff oldToNewPathMovedFiles.values.toSet
+
+          /*
+           * The paths to delete, now, are the paths in the latest version minus the remaining files. We further subtract the old paths of the moved files.
+           * This may be a bit confusing, but the goals is to make sure that the underlying FILE remains present (after all, it is to be renamed/moved). The
+           * path itself WILL be "removed" from the latest version by the move. (It MAY be filled again by a file addition in the same update, though.)
+           */
+          pathsToDelete = pathToFileMetaInLatestVersion.keySet diff candidateRemainingFiles diff oldToNewPathMovedFiles.keySet
+          _ = debug(s"pathsToDelete = $pathsToDelete")
           fileDeletions <- getFileDeletions(pathsToDelete, pathToFileMetaInLatestVersion)
           _ = debug(s"fileDeletions = $fileDeletions")
           _ <- deleteFiles(dataset, fileDeletions.toList)
 
-          pathsToAdd = pathToFileInfo.keySet diff pathToFileMetaInLatestVersion.keySet diff oldToNewPathMovedFiles.values.toSet
+          /*
+           * After the movements have been performed, which paths are occupied? We start from the paths of the latest version (pathToFileMetaInLatestVersion.keySet)
+           *
+           * The old paths of the moved files (oldToNewPathMovedFiles.keySet) are no longer occupied, so they must be subtracted. This is important in the case where
+           * a deposit renames/moves a file (leaving the checksum unchanges) but provides a new file for the vacated path.
+           *
+           * The paths of the deleted files (pathsToDelete) are no longer occupied, so must be subtracted. (It is not strictly necessary for the calculation
+           * of pathsToAdd, but done anyway to keep the logic consistent.)
+           *
+           * The new paths of the moved files (oldToNewPathMovedFiles.values.toSet) *are* now occupied, so the must be added. This is important to
+           * avoid those files from being marked as "new" files, i.e. files to be added.
+           *
+           * All paths in the deposit that are not occupied, are new files to be added.
+           */
+          occupiedPaths = (pathToFileMetaInLatestVersion.keySet diff oldToNewPathMovedFiles.keySet diff pathsToDelete) union oldToNewPathMovedFiles.values.toSet
+          _ = debug(s"occupiedPaths = $occupiedPaths")
+          pathsToAdd = pathToFileInfo.keySet diff occupiedPaths
           filesToAdd = pathsToAdd.map(pathToFileInfo).toList
+          _ = debug(s"filesToAdd = $filesToAdd")
           fileAdditions <- addFiles(doi, filesToAdd, prestagedFiles).map(_.mapValues(_.metadata))
 
-          // TODO: what happens with file that only got a new description? Their MD will not be updated ??!!
-          // TODO: probably just change this to: update the file md of all the files that are in the new version. Will DV show "null-replacements" in the differences view??
+          // TODO: check that only updating the file metadata works
           _ <- updateFileMetadata(fileReplacements ++ fileMovements ++ fileAdditions)
           _ <- dataset.awaitUnlock()
 
@@ -127,7 +170,7 @@ class DatasetUpdater(deposit: Deposit,
       r <- datasetApi.viewLatestVersion()
       v <- r.data
       _ <- if (v.latestVersion.versionState.contains("DRAFT")) {
-        logger.error(s"v = ${Serialization.writePretty(v)}")
+        logger.error(s"v = ${ Serialization.writePretty(v) }")
         Failure(CannotUpdateDraftDatasetException(deposit))
       }
            else Success(())
@@ -176,7 +219,7 @@ class DatasetUpdater(deposit: Deposit,
     trace(())
     val intersection = pathToFileInfo.keySet intersect pathToFileMetaInLatestVersion.keySet
     debug(s"The following files are in both deposit and latest published version: ${ intersection.mkString(", ") }")
-    val checksumsDiffer = intersection.filter(p => pathToFileInfo(p).checksum != pathToFileMetaInLatestVersion(p).dataFile.get.checksum.value) // TODO: validate filemetas first
+    val checksumsDiffer = intersection.filter(p => pathToFileInfo(p).checksum != pathToFileMetaInLatestVersion(p).dataFile.get.checksum.value)
     debug(s"The following files are in both deposit and latest published version AND have a different checksum: ${ checksumsDiffer.mkString(", ") }")
     checksumsDiffer.map(p => (pathToFileMetaInLatestVersion(p).dataFile.get.id, pathToFileInfo(p))).toMap
   }
