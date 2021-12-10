@@ -81,20 +81,34 @@ class DatasetUpdater(deposit: Deposit,
           // Movement will be realized by updating label and directoryLabel attributes of the file; there is no separate "move-file" API endpoint.
           _ = debug(s"fileMovements = $fileMovements")
 
-          // The old paths of moved files must be excluded from possible replacement candidates. A file has been moved can not also be replaced
-          // in the same update
+          /*
+           * File replacement can only happen on files with paths that are not also involved in a rename/move action. Otherwise we end up with:
+           *
+           * - trying to update the file metadata by a database ID that is not the "HEAD" of a file version history (which Dataverse doesn't allow anyway, it
+           * fails with "You cannot edit metadata on a dataFile that has been replaced"). This happens when a file A is renamed to B, but a different file A
+           * is also added in the same update.
+           *
+           * - trying to add a file with a name that already exists. This happens when a file A is renamed to B, while B is also part of the latest version
+           */
           fileReplacementCandidates = pathToFileMetaInLatestVersion
-            .filterNot { case (path, _) => oldToNewPathMovedFiles.keySet.contains(path) }
-            .filterNot { case (path, _) => oldToNewPathMovedFiles.values.toSet.contains(path) }
+            .filterNot { case (path, _) => oldToNewPathMovedFiles.keySet.contains(path) } // remove old paths of moved files
+            .filterNot { case (path, _) => oldToNewPathMovedFiles.values.toSet.contains(path) } // remove new paths of moved files
           filesToReplace <- getFilesToReplace(pathToFileInfo, fileReplacementCandidates)
           fileReplacements <- replaceFiles(dataset, filesToReplace, prestagedFiles)
           _ = debug(s"fileReplacements = $fileReplacements")
 
           /*
-           * To find the files to delete, we need to take into account:
-           *
+           * To find the files to delete we start from the paths in the deposit payload. In principle, these paths are remaining, so should NOT be deleted.
+           * However, if a file is moved/renamed to a path that was also present in the latest version, then the old file at that path must first be deleted
+           * (and must therefore NOT included in candidateRemainingFiles). Otherwise we'll end up trying to use an existing (directoryLabel, label) pair.
            */
           candidateRemainingFiles = pathToFileInfo.keySet diff oldToNewPathMovedFiles.values.toSet
+
+          /*
+           * The paths to delete, now, are the paths in the latest version minus the remaining files. We further subtract the old paths of the moved files.
+           * This may be a bit confusing, but the goals is to make sure that the underlying FILE remains present (after all, it is to be renamed/moved). The
+           * path itself WILL be "removed" from the latest version by the move. (It MAY be filled again by a file addition in the same update, though.)
+           */
           pathsToDelete = pathToFileMetaInLatestVersion.keySet diff candidateRemainingFiles diff oldToNewPathMovedFiles.keySet
           _ = debug(s"pathsToDelete = $pathsToDelete")
           fileDeletions <- getFileDeletions(pathsToDelete, pathToFileMetaInLatestVersion)
