@@ -30,6 +30,7 @@ import scala.util.{ Failure, Success, Try }
 
 class DatasetCreator(deposit: Deposit,
                      optFileExclusionPattern: Option[Pattern],
+                     depositorRole: String,
                      isMigration: Boolean = false,
                      dataverseDataset: Dataset,
                      variantToLicense: Map[String, String],
@@ -62,8 +63,8 @@ class DatasetCreator(deposit: Deposit,
           _ <- instance.dataset(persistentId).awaitUnlock()
           _ <- configureEnableAccessRequests(deposit, persistentId, canEnable = true)
           _ <- instance.dataset(persistentId).awaitUnlock()
-          _ = debug(s"Assigning contributor role to ${ deposit.depositorUserId }")
-          _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${ deposit.depositorUserId }", DefaultRole.contributor.toString))
+          _ = debug(s"Assigning role $depositorRole to ${ deposit.depositorUserId }")
+          _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${ deposit.depositorUserId }", depositorRole))
           _ <- instance.dataset(persistentId).awaitUnlock()
           dateAvailable <- deposit.getDateAvailable
           _ <- if (isEmbargo(dateAvailable)) embargoFiles(persistentId, dateAvailable)

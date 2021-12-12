@@ -39,6 +39,7 @@ class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhan
       new DepositIngestTaskFactory(
         isMigrated = false,
         configuration.optFileExclusionPattern,
+        configuration.depositorRole,
         configuration.deduplicateService,
         configuration.deduplicateImport,
         getActiveMetadataBlocks.get,
@@ -74,6 +75,7 @@ class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhan
         new DepositIngestTaskFactory(
           isMigrated = true,
           configuration.optFileExclusionPattern,
+          configuration.depositorRole,
           configuration.deduplicateService,
           configuration.deduplicateImport,
           getActiveMetadataBlocks.get,
@@ -102,6 +104,7 @@ class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhan
         new DepositIngestTaskFactory(
           isMigrated = true,
           configuration.optFileExclusionPattern,
+          configuration.depositorRole,
           configuration.deduplicateService,
           configuration.deduplicateImport,
           getActiveMetadataBlocks.get,

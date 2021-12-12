@@ -41,6 +41,7 @@ import scala.xml.Elem
  */
 class DepositIngestTaskFactory(isMigrated: Boolean = false,
                                optFileExclusionPattern: Option[Pattern],
+                               depositorRole: String,
                                deduplicateService: Boolean,
                                deduplicateImport: Boolean,
                                activeMetadataBlocks: List[String],
@@ -62,6 +63,7 @@ class DepositIngestTaskFactory(isMigrated: Boolean = false,
     if (isMigrated)
       new DepositMigrationTask(deposit,
         optFileExclusionPattern,
+        depositorRole,
         deduplicateImport,
         activeMetadataBlocks,
         optDansBagValidator,
@@ -80,6 +82,7 @@ class DepositIngestTaskFactory(isMigrated: Boolean = false,
       DepositIngestTask(
         deposit,
         optFileExclusionPattern,
+        depositorRole,
         deduplicateService,
         activeMetadataBlocks,
         optDansBagValidator,

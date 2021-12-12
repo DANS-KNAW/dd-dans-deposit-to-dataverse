@@ -46,6 +46,7 @@ import scala.xml.Elem
  */
 case class DepositIngestTask(deposit: Deposit,
                              optFileExclusionPattern: Option[Pattern],
+                             depositorRole: String,
                              deduplicate: Boolean,
                              activeMetadataBlocks: List[String],
                              optDansBagValidator: Option[DansBagValidator],
@@ -102,7 +103,7 @@ case class DepositIngestTask(deposit: Deposit,
       isUpdate <- deposit.isUpdate
       _ = debug(s"isUpdate? = $isUpdate")
       editor = if (isUpdate) newDatasetUpdater(dataverseDataset)
-               else newDatasetCreator(dataverseDataset)
+               else newDatasetCreator(dataverseDataset, depositorRole)
       persistentId <- editor.performEdit()
       _ <- publishDataset(persistentId)
       _ <- postPublication(persistentId)
@@ -177,8 +178,8 @@ case class DepositIngestTask(deposit: Deposit,
     new DatasetUpdater(deposit, optFileExclusionPattern, isMigration = false, dataverseDataset.datasetVersion.metadataBlocks, variantToLicense, supportedLicenses, instance, Option.empty)
   }
 
-  protected def newDatasetCreator(dataverseDataset: Dataset): DatasetCreator = {
-    new DatasetCreator(deposit, optFileExclusionPattern, isMigration = false, dataverseDataset, variantToLicense, supportedLicenses, instance, Option.empty)
+  protected def newDatasetCreator(dataverseDataset: Dataset, depositorRole: String): DatasetCreator = {
+    new DatasetCreator(deposit, optFileExclusionPattern, depositorRole, isMigration = false, dataverseDataset, variantToLicense, supportedLicenses, instance, Option.empty)
   }
 
   protected def publishDataset(persistentId: String): Try[Unit] = {
