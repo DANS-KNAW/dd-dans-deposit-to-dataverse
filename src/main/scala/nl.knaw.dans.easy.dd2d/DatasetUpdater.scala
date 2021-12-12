@@ -44,7 +44,7 @@ class DatasetUpdater(deposit: Deposit,
   override def performEdit(): Try[PersistentId] = {
     {
       for {
-        doi <- if (isMigration) Try { deposit.dataversePid }
+        doi <- if (isMigration) getDoiByIsVersionOf // using deposit.dataversePid may lead to confusing situations when the DOI is present but erroneously so.
                else getDoiBySwordToken
       } yield doi
     } match {
@@ -182,6 +182,20 @@ class DatasetUpdater(deposit: Deposit,
     debug(s"dansSwordToken = ${ deposit.vaultMetadata.dataverseSwordToken }")
     for {
       r <- instance.search().find(s"""dansSwordToken:"${ deposit.vaultMetadata.dataverseSwordToken }"""")
+      searchResult <- r.data
+      items = searchResult.items
+      _ = if (items.size != 1) throw FailedDepositException(deposit, s"Deposit is update of ${ items.size } datasets; should always be 1!")
+      doi = items.head.asInstanceOf[DatasetResultItem].globalId
+      _ = debug(s"Deposit is update of dataset $doi")
+    } yield doi
+  }
+
+  private def getDoiByIsVersionOf: Try[String] = {
+    trace(())
+    for {
+      isVersionOf <- deposit.getIsVersionOf
+      _ = debug(s"Is-Version-Of = $isVersionOf")
+      r <- instance.search().find(s"""dansBagId:"$isVersionOf"""")
       searchResult <- r.data
       items = searchResult.items
       _ = if (items.size != 1) throw FailedDepositException(deposit, s"Deposit is update of ${ items.size } datasets; should always be 1!")
