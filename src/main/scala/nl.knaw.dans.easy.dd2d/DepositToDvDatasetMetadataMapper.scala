@@ -86,7 +86,6 @@ class DepositToDvDatasetMetadataMapper(deduplicate: Boolean,
         (ddm \ "dcmiMetadata" \ "date") ++
         (ddm \ "dcmiMetadata" \ "dateAccepted") ++
         (ddm \ "dcmiMetadata" \ "dateCopyrighted ") ++
-        (ddm \ "dcmiMetadata" \ "dateSubmitted") ++
         (ddm \ "dcmiMetadata" \ "modified") ++
         (ddm \ "dcmiMetadata" \ "issued") ++
         (ddm \ "dcmiMetadata" \ "valid") ++
