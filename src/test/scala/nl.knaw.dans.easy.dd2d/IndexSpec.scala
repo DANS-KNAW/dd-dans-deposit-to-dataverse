@@ -27,6 +27,7 @@ class IndexSpec extends TestSupportFixture {
     inboxDir = null,
     outboxDir = null,
     optFileExclusionPattern = null,
+    depositorRole = null,
     validatorServiceUrl = null,
     validatorConnectionTimeoutMs = 1000,
     validatorReadTimeoutMs = 1000,
