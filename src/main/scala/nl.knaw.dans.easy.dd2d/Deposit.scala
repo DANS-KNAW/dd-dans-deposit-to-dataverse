@@ -25,7 +25,6 @@ import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import org.apache.commons.configuration.PropertiesConfiguration
 
 import java.nio.file.{ Path, Paths }
-import java.text.SimpleDateFormat
 import java.util.Date
 import scala.collection.JavaConverters.{ asScalaSetConverter, mapAsScalaMapConverter }
 import scala.util.{ Failure, Try }
@@ -155,12 +154,18 @@ case class Deposit(dir: File) extends DebugEnhancedLogging {
     } yield dateAvailableFormat.parse(dateAvailable)
   }
 
-
   def isUpdate: Try[Boolean] = {
     for {
       bag <- tryBag
       isVersionOf = bag.getMetadata.get("Is-Version-Of")
     } yield isVersionOf != null && isVersionOf.size() > 0
+  }
+
+  def getIsVersionOf: Try[String] = {
+    for {
+      bag <- tryBag
+      isVersionOf = bag.getMetadata.get("Is-Version-Of").get(0)
+    } yield isVersionOf
   }
 
   def getPathToFileInfo: Try[Map[Path, FileInfo]] = {

@@ -30,6 +30,7 @@ import scala.util.{ Failure, Success, Try }
 
 class DatasetCreator(deposit: Deposit,
                      optFileExclusionPattern: Option[Pattern],
+                     depositorRole: String,
                      isMigration: Boolean = false,
                      prestagedFiles: Boolean,
                      dataverseDataset: Dataset,
@@ -39,7 +40,7 @@ class DatasetCreator(deposit: Deposit,
                      optMigrationInfoService: Option[MigrationInfo]) extends DatasetEditor(instance, optFileExclusionPattern) with DebugEnhancedLogging {
   trace(deposit)
 
-  override def performEdit(): Try[PersistendId] = {
+  override def performEdit(): Try[PersistentId] = {
     {
       for {
         // autoPublish is false, because it seems there is a bug with it in Dataverse (most of the time?)
@@ -64,8 +65,8 @@ class DatasetCreator(deposit: Deposit,
           _ <- instance.dataset(persistentId).awaitUnlock()
           _ <- configureEnableAccessRequests(deposit, persistentId, canEnable = true)
           _ <- instance.dataset(persistentId).awaitUnlock()
-          _ = debug(s"Assigning contributor role to ${ deposit.depositorUserId }")
-          _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${ deposit.depositorUserId }", DefaultRole.contributor.toString))
+          _ = debug(s"Assigning role $depositorRole to ${ deposit.depositorUserId }")
+          _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${ deposit.depositorUserId }", depositorRole))
           _ <- instance.dataset(persistentId).awaitUnlock()
           dateAvailable <- deposit.getDateAvailable
           _ <- if (isEmbargo(dateAvailable)) embargoFiles(persistentId, dateAvailable)
@@ -86,7 +87,7 @@ class DatasetCreator(deposit: Deposit,
     response.data.map(_.persistentId)
   }
 
-  private def embargoFiles(persistentId: PersistendId, dateAvailable: Date): Try[Unit] = {
+  private def embargoFiles(persistentId: PersistentId, dateAvailable: Date): Try[Unit] = {
     logger.info(s"Putting embargo on files until: $dateAvailable")
     for {
       files <- getFilesToEmbargo(persistentId)

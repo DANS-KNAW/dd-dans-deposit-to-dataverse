@@ -45,8 +45,8 @@ import scala.xml.Elem
  * @param instance the Dataverse instance to ingest in
  */
 case class DepositIngestTask(deposit: Deposit,
-                             prestagedFiles: Boolean,
                              optFileExclusionPattern: Option[Pattern],
+                             depositorRole: String,
                              deduplicate: Boolean,
                              activeMetadataBlocks: List[String],
                              optDansBagValidator: Option[DansBagValidator],
@@ -103,7 +103,7 @@ case class DepositIngestTask(deposit: Deposit,
       isUpdate <- deposit.isUpdate
       _ = debug(s"isUpdate? = $isUpdate")
       editor = if (isUpdate) newDatasetUpdater(dataverseDataset)
-               else newDatasetCreator(dataverseDataset)
+               else newDatasetCreator(dataverseDataset, depositorRole)
       persistentId <- editor.performEdit()
       _ <- publishDataset(persistentId)
       _ <- postPublication(persistentId)
@@ -175,11 +175,11 @@ case class DepositIngestTask(deposit: Deposit,
   }
 
   protected def newDatasetUpdater(dataverseDataset: Dataset): DatasetUpdater = {
-    new DatasetUpdater(deposit, optFileExclusionPattern, isMigration = false, prestagedFiles, dataverseDataset.datasetVersion.metadataBlocks, variantToLicense, supportedLicenses, instance, Option.empty)
+    new DatasetUpdater(deposit, optFileExclusionPattern, isMigration = false, dataverseDataset.datasetVersion.metadataBlocks, variantToLicense, supportedLicenses, instance, Option.empty)
   }
 
-  protected def newDatasetCreator(dataverseDataset: Dataset): DatasetCreator = {
-    new DatasetCreator(deposit, optFileExclusionPattern, isMigration = false, prestagedFiles, dataverseDataset, variantToLicense, supportedLicenses, instance, Option.empty)
+  protected def newDatasetCreator(dataverseDataset: Dataset, depositorRole: String): DatasetCreator = {
+    new DatasetCreator(deposit, optFileExclusionPattern, depositorRole, isMigration = false, dataverseDataset, variantToLicense, supportedLicenses, instance, Option.empty)
   }
 
   protected def publishDataset(persistentId: String): Try[Unit] = {
