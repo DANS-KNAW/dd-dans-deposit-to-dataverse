@@ -32,7 +32,6 @@ class DatasetCreator(deposit: Deposit,
                      optFileExclusionPattern: Option[Pattern],
                      depositorRole: String,
                      isMigration: Boolean = false,
-                     prestagedFiles: Boolean,
                      dataverseDataset: Dataset,
                      variantToLicense: Map[String, String],
                      supportedLicenses: List[URI],
@@ -58,8 +57,7 @@ class DatasetCreator(deposit: Deposit,
           _ <- setLicense(supportedLicenses)(variantToLicense)(deposit, instance.dataset(persistentId))
           _ <- instance.dataset(persistentId).awaitUnlock()
           pathToFileInfo <- getPathToFileInfo(deposit)
-          prestagedFiles <- if (prestagedFiles) optMigrationInfoService.map(_.getPrestagedDataFilesFor(s"doi:${ deposit.doi }", 1)).getOrElse(Success(Set.empty[BasicFileMeta]))
-                            else Success(Set.empty[BasicFileMeta])
+          prestagedFiles <- optMigrationInfoService.map(_.getPrestagedDataFilesFor(s"doi:${ deposit.doi }", 1)).getOrElse(Success(Set.empty[BasicFileMeta]))
           databaseIdsToFileInfo <- addFiles(persistentId, pathToFileInfo.values.toList, prestagedFiles)
           _ <- updateFileMetadata(databaseIdsToFileInfo.mapValues(_.metadata))
           _ <- instance.dataset(persistentId).awaitUnlock()

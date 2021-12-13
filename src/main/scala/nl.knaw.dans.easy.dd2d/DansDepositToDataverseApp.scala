@@ -25,10 +25,10 @@ import nl.knaw.dans.lib.taskqueue.InboxWatcher
 import java.io.PrintStream
 import scala.util.{ Success, Try }
 
-class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhancedLogging {
+class DansDepositToDataverseApp(configuration: Configuration, prestagedFiles: Boolean) extends DebugEnhancedLogging {
   private implicit val resultOutput: PrintStream = Console.out
   private val dataverse = new DataverseInstance(configuration.dataverse)
-  private val migrationInfo = new MigrationInfo(configuration.migrationInfo)
+  private val migrationInfo = new MigrationInfo(configuration.migrationInfo, prestagedFiles)
   private val dansBagValidator = new DansBagValidator(
     serviceUri = configuration.validatorServiceUrl,
     connTimeoutMs = configuration.validatorConnectionTimeoutMs,
@@ -38,7 +38,6 @@ class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhan
     new InboxWatcher(new Inbox(configuration.inboxDir,
       new DepositIngestTaskFactory(
         isMigrated = false,
-        false,
         configuration.optFileExclusionPattern,
         configuration.depositorRole,
         configuration.deduplicateService,
@@ -58,7 +57,7 @@ class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhan
         configuration.outboxDir)))
   }
 
-  private def checkPreconditions(skipValidation: Boolean = false, prestagedFiles: Boolean): Try[Unit] = {
+  private def checkPreconditions(skipValidation: Boolean = false): Try[Unit] = {
     for {
       _ <- if (skipValidation) Success(())
            else dansBagValidator.checkConnection()
@@ -71,16 +70,15 @@ class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhan
     } yield ()
   }
 
-  def importSingleDeposit(deposit: File, outboxDir: File, skipValidation: Boolean, prestagedFiles: Boolean): Try[Unit] = {
+  def importSingleDeposit(deposit: File, outboxDir: File, skipValidation: Boolean): Try[Unit] = {
     trace(deposit, outboxDir)
     for {
-      - <- checkPreconditions(skipValidation, prestagedFiles)
+      - <- checkPreconditions(skipValidation)
       _ <- initOutboxDirs(outboxDir, requireAbsenceOfResults = false)
       - <- mustNotExist(OutboxSubdir.values.map(_.toString).map(subdir => outboxDir / subdir / deposit.name).toList)
       _ <- new SingleDepositProcessor(deposit,
         new DepositIngestTaskFactory(
           isMigrated = true,
-          prestagedFiles,
           configuration.optFileExclusionPattern,
           configuration.depositorRole,
           configuration.deduplicateService,
@@ -102,15 +100,14 @@ class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhan
     } yield ()
   }
 
-  def importDeposits(inbox: File, outboxDir: File, requireAbsenceOfResults: Boolean = true, skipValidation: Boolean = false, prestagedFiles: Boolean): Try[Unit] = {
+  def importDeposits(inbox: File, outboxDir: File, requireAbsenceOfResults: Boolean = true, skipValidation: Boolean = false): Try[Unit] = {
     trace(inbox, outboxDir, requireAbsenceOfResults)
     for {
-      _ <- checkPreconditions(skipValidation, prestagedFiles)
+      _ <- checkPreconditions(skipValidation)
       _ <- initOutboxDirs(outboxDir, requireAbsenceOfResults)
       _ <- new InboxProcessor(new Inbox(inbox,
         new DepositIngestTaskFactory(
           isMigrated = true,
-          prestagedFiles,
           configuration.optFileExclusionPattern,
           configuration.depositorRole,
           configuration.deduplicateService,

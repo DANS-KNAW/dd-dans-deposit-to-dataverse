@@ -28,7 +28,6 @@ import scala.xml.Elem
  * Factory for creating ingest tasks.
  *
  * @param isMigrated                                   is this a migrated dataset?
- * @param prestagedFiles                               are prestaged files included?
  * @param activeMetadataBlocks                         the metadata blocks enabled in the target dataverse
  * @param optDansBagValidator                          interface to the easy-validate-dans-bag service
  * @param instance                                     interface to the target Dataverse instance
@@ -41,7 +40,6 @@ import scala.xml.Elem
  * @param outboxDir                                    outbox
  */
 class DepositIngestTaskFactory(isMigrated: Boolean = false,
-                               prestagedFiles: Boolean,
                                optFileExclusionPattern: Option[Pattern],
                                depositorRole: String,
                                deduplicateService: Boolean,
@@ -64,7 +62,6 @@ class DepositIngestTaskFactory(isMigrated: Boolean = false,
   def createDepositIngestTask(deposit: Deposit): DepositIngestTask = {
     if (isMigrated)
       new DepositMigrationTask(deposit,
-        prestagedFiles,
         optFileExclusionPattern,
         depositorRole,
         deduplicateImport,
@@ -84,7 +81,6 @@ class DepositIngestTaskFactory(isMigrated: Boolean = false,
     else
       DepositIngestTask(
         deposit,
-        prestagedFiles,
         optFileExclusionPattern,
         depositorRole,
         deduplicateService,

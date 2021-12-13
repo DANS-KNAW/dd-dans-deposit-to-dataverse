@@ -31,12 +31,12 @@ object Command extends App with DebugEnhancedLogging {
     verify()
   }
 
-  val app = new DansDepositToDataverseApp(configuration)
+  val app = new DansDepositToDataverseApp(configuration, commandLine.importCommand.prestagedFiles.getOrElse(false))
   val result =
     commandLine.subcommand match {
       case Some(cmd @ commandLine.importCommand) => {
-        if (cmd.singleDeposit()) app.importSingleDeposit(cmd.depositsInboxOrSingleDeposit(), cmd.outdir(), cmd.skipValidation(), cmd.prestagedFiles())
-        else app.importDeposits(cmd.depositsInboxOrSingleDeposit(), cmd.outdir(), !cmd.continue(), cmd.skipValidation(), cmd.prestagedFiles())
+        if (cmd.singleDeposit()) app.importSingleDeposit(cmd.depositsInboxOrSingleDeposit(), cmd.outdir(), cmd.skipValidation())
+        else app.importDeposits(cmd.depositsInboxOrSingleDeposit(), cmd.outdir(), !cmd.continue(), cmd.skipValidation())
       }.map(_ => "Done importing deposits")
       case Some(_ @ commandLine.runService) => runAsService()
       case _ => Try { s"Unknown command: ${ commandLine.subcommand }" }
