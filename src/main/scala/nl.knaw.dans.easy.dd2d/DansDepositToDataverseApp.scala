@@ -25,10 +25,10 @@ import nl.knaw.dans.lib.taskqueue.InboxWatcher
 import java.io.PrintStream
 import scala.util.{ Success, Try }
 
-class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhancedLogging {
+class DansDepositToDataverseApp(configuration: Configuration, prestagedFiles: Boolean) extends DebugEnhancedLogging {
   private implicit val resultOutput: PrintStream = Console.out
   private val dataverse = new DataverseInstance(configuration.dataverse)
-  private val migrationInfo = new MigrationInfo(configuration.migrationInfo)
+  private val migrationInfo = new MigrationInfo(configuration.migrationInfo, prestagedFiles)
   private val dansBagValidator = new DansBagValidator(
     serviceUri = configuration.validatorServiceUrl,
     connTimeoutMs = configuration.validatorConnectionTimeoutMs,
@@ -61,6 +61,11 @@ class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhan
     for {
       _ <- if (skipValidation) Success(())
            else dansBagValidator.checkConnection()
+      _ <- if (prestagedFiles) migrationInfo.checkConnection()
+           else {
+             logger.warn("IMPORT WITHOUT PRE-STAGED FILES")
+             Success(())
+           }
       _ <- dataverse.checkConnection()
     } yield ()
   }

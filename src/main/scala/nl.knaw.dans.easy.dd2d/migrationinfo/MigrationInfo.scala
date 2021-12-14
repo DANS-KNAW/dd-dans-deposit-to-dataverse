@@ -21,9 +21,9 @@ import org.json4s.{ DefaultFormats, Formats }
 import scalaj.http.Http
 
 import java.net.URI
-import scala.util.Try
+import scala.util.{ Success, Try }
 
-class MigrationInfo(config: MigrationInfoConfig) extends DebugEnhancedLogging {
+class MigrationInfo(config: MigrationInfoConfig, prestagedFiles: Boolean) extends DebugEnhancedLogging {
   private implicit val jsonFormats: Formats = DefaultFormats
 
   def checkConnection(): Try[Unit] = {
@@ -42,21 +42,24 @@ class MigrationInfo(config: MigrationInfoConfig) extends DebugEnhancedLogging {
 
   def getPrestagedDataFilesFor(doi: String, seqNr: Int): Try[Set[BasicFileMeta]] = {
     trace(doi, seqNr)
-    val url = (new URI(config.baseUrl + "/") resolve s"datasets/:persistentId/seq/$seqNr/basic-file-metas").toASCIIString
-    debug(s"Retrieving pre-staged files for $doi from $url")
-    Try {
-      Http(url)
-        .params("persistentId" -> doi)
-        .timeout(connTimeoutMs = config.connectionTimeout, readTimeoutMs = config.readTimeout)
-        .asString
-    } map {
-      case r if r.code == 200 =>
-        val json = JsonMethods.parse(r.body)
-        json.extract[List[BasicFileMeta]].toSet
-      case r if r.code == 404 =>
-        logger.warn(s"No pre-staged files could be found for dataset $doi. Returning empty result.")
-        Set.empty
-      case r => throw new RuntimeException(s"Could not retrieve pre-staged files. Status: ${ r.code }, Message: ${ r.body }")
+    if (prestagedFiles) {
+      val url = (new URI(config.baseUrl + "/") resolve s"datasets/:persistentId/seq/$seqNr/basic-file-metas").toASCIIString
+      debug(s"Retrieving pre-staged files for $doi from $url")
+      Try {
+        Http(url)
+          .params("persistentId" -> doi)
+          .timeout(connTimeoutMs = config.connectionTimeout, readTimeoutMs = config.readTimeout)
+          .asString
+      } map {
+        case r if r.code == 200 =>
+          val json = JsonMethods.parse(r.body)
+          json.extract[List[BasicFileMeta]].toSet
+        case r if r.code == 404 =>
+          logger.warn(s"No pre-staged files could be found for dataset $doi. Returning empty result.")
+          Set.empty
+        case r => throw new RuntimeException(s"Could not retrieve pre-staged files. Status: ${ r.code }, Message: ${ r.body }")
+      }
     }
+    else Success(Set.empty[BasicFileMeta])
   }
 }
