@@ -87,7 +87,7 @@ object DcxDaiAuthor extends Contributor with BlockCitation {
 
   def toRightsHolder(node: Node): Option[String] = {
     val author = parseAuthor(node)
-    Option(formatName(author))
+    Option(formatRightsHolder(author))
   }
 
   def isRightsHolder(node: Node): Boolean = {
@@ -100,6 +100,18 @@ object DcxDaiAuthor extends Contributor with BlockCitation {
       author.insertions.getOrElse(""),
       author.surname.getOrElse(""))
       .mkString(" ").trim().replaceAll("\\s+", " ")
+  }
+
+  private def formatRightsHolder(rightsHolder: Author): String = {
+    if (rightsHolder.surname.isEmpty)
+      rightsHolder.organization.getOrElse("")
+    else
+      List(rightsHolder.titles.getOrElse(""),
+        rightsHolder.initials.getOrElse(""),
+        rightsHolder.insertions.getOrElse(""),
+        rightsHolder.surname.getOrElse(""),
+        rightsHolder.organization.map(o => s"($o)").getOrElse(""))
+        .mkString(" ").trim().replaceAll("\\s+", " ")
   }
 
   private def addIdentifier(m: FieldMap, scheme: String, value: String): Unit = {

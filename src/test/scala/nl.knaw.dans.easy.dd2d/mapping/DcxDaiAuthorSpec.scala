@@ -74,4 +74,31 @@ class DcxDaiAuthorSpec extends TestSupportFixture with BlockCitation {
     findString(result, s"$CONTRIBUTOR_NAME.value") shouldBe "Anti-Vampire League"
     findString(result, s"$CONTRIBUTOR_TYPE.value") shouldBe "Other"
   }
+
+  "toRightsHolder" should "create rights holder with organization in brackets" in {
+    val author =
+      <dcx-dai:author>
+        <dcx-dai:titles>Dr</dcx-dai:titles>
+        <dcx-dai:initials>A</dcx-dai:initials>
+        <dcx-dai:insertions>van</dcx-dai:insertions>
+        <dcx-dai:surname>Helsing</dcx-dai:surname>
+        <dcx-dai:role>ProjectManager</dcx-dai:role>
+        <dcx-dai:organization>
+          <dcx-dai:name xml:lang="en">Anti-Vampire League</dcx-dai:name>
+        </dcx-dai:organization>
+      </dcx-dai:author>
+    val result = DcxDaiAuthor.toRightsHolder(author).get
+    result shouldBe "Dr A van Helsing (Anti-Vampire League)"
+  }
+
+  it should "create rights holder with organization without brackets when no surname is given" in {
+    val author =
+      <dcx-dai:author>
+        <dcx-dai:organization>
+          <dcx-dai:name xml:lang="en">Anti-Vampire League</dcx-dai:name>
+        </dcx-dai:organization>
+      </dcx-dai:author>
+    val result = DcxDaiAuthor.toRightsHolder(author).get
+    result shouldBe "Anti-Vampire League"
+  }
 }
