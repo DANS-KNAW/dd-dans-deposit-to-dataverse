@@ -61,7 +61,7 @@ class AmdSpec extends TestSupportFixture with BlockCitation {
       <damd:workflowData version="0.1" />
     </damd:administrative-md>
 
-    Amd.toDateOfDeposit("FEDORA")(xml) shouldBe Some("2017-04-13")
+    Amd.toDateOfDeposit(xml) shouldBe Some("2017-04-13")
   }
 
   it should "use date of first change to PUBLISHED state if no change to SUBMITTED state is found" in {
@@ -80,6 +80,6 @@ class AmdSpec extends TestSupportFixture with BlockCitation {
                 <groupIds></groupIds>
                 <damd:workflowData version="0.1" />
               </damd:administrative-md>
-    Amd.toDateOfDeposit("VAULT")(xml) shouldBe Some("2019-04-25")
+    Amd.toDateOfDeposit(xml) shouldBe Some("2019-04-25")
   }
 }

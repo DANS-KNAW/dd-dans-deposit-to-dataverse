@@ -19,25 +19,22 @@ import scala.xml.Node
 
 object Amd {
 
-  def toDateOfDeposit(depositOrigin: String)(node: Node): Option[String] = {
-    getFirstChangeToState(node, "SUBMITTED", depositOrigin)
+  def toDateOfDeposit(node: Node): Option[String] = {
+    getFirstChangeToState(node, "SUBMITTED")
       .orElse {
-        getFirstChangeToState(node, "PUBLISHED", depositOrigin)
+        getFirstChangeToState(node, "PUBLISHED")
       }
   }
 
-  def getFirstChangeToState(amd: Node, state: String, depositOrigin: String): Option[String] = {
-    if (depositOrigin == "VAULT")
-      DateTypeElement.toYearMonthDayFormat((amd \ "lastStateChange").head)
-    else
-      (amd \ "stateChangeDates" \ "stateChangeDate")
-        .filter(sc => (sc \ "toState").text == state)
-        .toList
-        .map(_ \ "changeDate")
-        .map(_.head)
-        .map(DateTypeElement.toYearMonthDayFormat)
-        .map(_.get)
-        .sorted
-        .headOption
+  def getFirstChangeToState(amd: Node, state: String): Option[String] = {
+    (amd \ "stateChangeDates" \ "stateChangeDate")
+      .filter(sc => (sc \ "toState").text == state)
+      .toList
+      .map(_ \ "changeDate")
+      .map(_.headOption.getOrElse((amd \ "lastStateChange").head))
+      .map(DateTypeElement.toYearMonthDayFormat)
+      .map(_.get)
+      .sorted
+      .headOption
   }
 }
