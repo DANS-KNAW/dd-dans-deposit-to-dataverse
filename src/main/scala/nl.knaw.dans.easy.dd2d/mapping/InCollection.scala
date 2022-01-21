@@ -22,6 +22,6 @@ import scala.xml.Node
 object InCollection extends BlockRelation with DebugEnhancedLogging {
   def toCollection(node: Node): Option[String] = {
     // TODO: also take attribute namespace into account (should be ddm)
-    node.attribute("valueURI").flatMap(_.headOption).map(_.text).doIfNone(() => logger.error("Missing valueURI attribute on ddm:inCollectionr node"))
+    node.attribute("valueURI").flatMap(_.headOption).map(_.text).doIfNone(() => logger.error("Missing valueURI attribute on ddm:inCollection node"))
   }
 }

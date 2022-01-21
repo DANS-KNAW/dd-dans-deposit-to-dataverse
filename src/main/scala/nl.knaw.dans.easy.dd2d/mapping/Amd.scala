@@ -15,6 +15,8 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
+import org.apache.commons.lang.StringUtils
+
 import scala.xml.Node
 
 object Amd {
@@ -31,6 +33,7 @@ object Amd {
       .filter(sc => (sc \ "toState").text == state)
       .toList
       .map(_ \ "changeDate")
+      .filter(n => StringUtils.isNotBlank(n.text))
       .map(_.headOption.getOrElse((amd \ "lastStateChange").head))
       .map(DateTypeElement.toYearMonthDayFormat)
       .map(_.get)
