@@ -203,6 +203,10 @@ case class Deposit(dir: File) extends DebugEnhancedLogging {
     dataverseIdProtocol + ":" + dataverseIdAuthority + "/" + dataverseId
   }
 
+  def getDepositOrigin: String = {
+    depositProperties.getString("deposit.origin")
+  }
+
   private def dataverseIdProtocol: String = {
     depositProperties.getString("dataverse.id-protocol", "")
   }
