@@ -82,7 +82,7 @@ class DepositMigrationTask(deposit: Deposit,
   override protected def getDateOfDeposit: Try[Option[String]] = {
     for {
       optAmd <- deposit.tryOptAmd
-      optDate = optAmd.flatMap(Amd toDateOfDeposit)
+      optDate = optAmd.flatMap(Amd toDateOfDeposit(deposit.getDepositOrigin))
     } yield optDate
   }
 
@@ -91,7 +91,7 @@ class DepositMigrationTask(deposit: Deposit,
     for {
       optAmd <- deposit.tryOptAmd
       amd = optAmd.getOrElse(throw new Exception(s"no AMD found for $persistentId"))
-      optPublicationDate <- getJsonLdPublicationdate(amd)
+      optPublicationDate <- getJsonLdPublicationdate(amd, deposit.getDepositOrigin)
       publicationDate = optPublicationDate.getOrElse(throw new IllegalArgumentException(s"no publication date found in AMD for $persistentId"))
       _ <- instance.dataset(persistentId).releaseMigrated(publicationDate)
       _ <- instance.dataset(persistentId).awaitUnlock(
@@ -100,8 +100,8 @@ class DepositMigrationTask(deposit: Deposit,
     } yield ()
   }
 
-  private def getJsonLdPublicationdate(amd: Node): Try[Option[String]] = Try {
-    Amd.getFirstChangeToState(amd, "PUBLISHED")
+  private def getJsonLdPublicationdate(amd: Node, depositOrigin: String): Try[Option[String]] = Try {
+    Amd.getFirstChangeToState(amd, "PUBLISHED", depositOrigin)
       .map(d => s"""{"http://schema.org/datePublished": "$d"}""")
   }
 
