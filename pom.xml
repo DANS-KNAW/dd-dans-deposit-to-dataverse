@@ -27,7 +27,7 @@
 
     <groupId>nl.knaw.dans.easy</groupId>
     <artifactId>dd-dans-deposit-to-dataverse</artifactId>
-    <version>1.4.3</version>
+    <version>1.4.4-SNAPSHOT</version>
 
     <name>DANS Deposit To Dataverse Service</name>
     <url>https://github.com/DANS-KNAW/dd-dans-deposit-to-dataverse</url>
@@ -40,7 +40,7 @@
 
     <scm>
         <developerConnection>scm:git:https://github.com/DANS-KNAW/dd-dans-deposit-to-dataverse</developerConnection>
-        <tag>v1.4.3</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <dependencies>
