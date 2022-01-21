@@ -101,7 +101,7 @@ class DepositMigrationTask(deposit: Deposit,
   }
 
   private def getJsonLdPublicationdate(amd: Node): Try[Option[String]] = Try {
-    Amd.getFirstChangeToState(amd, "PUBLISHED")
+    Amd.toPublicationDate(amd)
       .map(d => s"""{"http://schema.org/datePublished": "$d"}""")
   }
 

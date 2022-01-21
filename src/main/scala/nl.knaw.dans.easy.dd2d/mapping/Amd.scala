@@ -24,18 +24,28 @@ object Amd {
   def toDateOfDeposit(node: Node): Option[String] = {
     getFirstChangeToState(node, "SUBMITTED")
       .orElse {
-        getFirstChangeToState(node, "PUBLISHED")
+        toPublicationDate(node: Node): Option[String]
       }
   }
 
-  def getFirstChangeToState(amd: Node, state: String): Option[String] = {
+  def toPublicationDate(node: Node): Option[String] = {
+    getFirstChangeToState(node, "PUBLISHED")
+      .orElse {
+        (node \ "lastStateChange")
+          .map(DateTypeElement.toYearMonthDayFormat)
+          .headOption.flatten
+      }
+  }
+
+  private def getFirstChangeToState(amd: Node, state: String): Option[String] = {
     (amd \ "stateChangeDates" \ "stateChangeDate")
       .filter(sc => (sc \ "toState").text == state)
-      .toList
-      .map(_ \ "changeDate")
+      .map(n => (n \ "changeDate").headOption)
+      .filter(_.isDefined)
+      .map(_.get)
       .filter(n => StringUtils.isNotBlank(n.text))
-      .map(_.headOption.getOrElse((amd \ "lastStateChange").head))
       .map(DateTypeElement.toYearMonthDayFormat)
+      .filter(_.isDefined)
       .map(_.get)
       .sorted
       .headOption

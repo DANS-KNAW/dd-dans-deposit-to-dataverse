@@ -44,7 +44,7 @@ class AmdSpec extends TestSupportFixture with BlockCitation {
         <damd:stateChangeDate>
           <fromState>SUBMITTED</fromState>
           <toState>PUBLISHED</toState>
-          <changeDate>2017-04-13T14:35:11.281+02:00</changeDate>
+          <changeDate>2017-04-16T14:35:11.281+02:00</changeDate>
         </damd:stateChangeDate>
         <damd:stateChangeDate>
           <fromState>PUBLISHED</fromState>
@@ -54,7 +54,7 @@ class AmdSpec extends TestSupportFixture with BlockCitation {
         <damd:stateChangeDate>
           <fromState>MAINTENANCE</fromState>
           <toState>PUBLISHED</toState>
-          <changeDate>2017-08-08T16:52:20.914+02:00</changeDate>
+          <changeDate>2017-08-09T16:52:20.914+02:00</changeDate>
         </damd:stateChangeDate>
       </stateChangeDates>
       <groupIds/>
@@ -82,4 +82,140 @@ class AmdSpec extends TestSupportFixture with BlockCitation {
               </damd:administrative-md>
     Amd.toDateOfDeposit(xml) shouldBe Some("2019-04-25")
   }
+
+  it should "use date lastStateChange if no stateChangeDates are available" in {
+    val xml = <damd:administrative-md xmlns:damd="http://easy.dans.knaw.nl/easy/dataset-administrative-metadata/" version="0.1">
+                <datasetState>PUBLISHED</datasetState>
+                <previousState>DRAFT</previousState>
+                <lastStateChange>2019-04-25T12:20:01.636+02:00</lastStateChange>
+                <depositorId>PANVU</depositorId>
+                <stateChangeDates>
+                </stateChangeDates>
+                <groupIds></groupIds>
+                <damd:workflowData version="0.1" />
+              </damd:administrative-md>
+    Amd.toDateOfDeposit(xml) shouldBe Some("2019-04-25")
+  }
+
+  it should "use date lastStateChange if no NONBLANK stateChangeDates are available" in {
+    val xml = <damd:administrative-md xmlns:damd="http://easy.dans.knaw.nl/easy/dataset-administrative-metadata/" version="0.1">
+                <datasetState>PUBLISHED</datasetState>
+                <previousState>DRAFT</previousState>
+                <lastStateChange>2019-04-25T12:20:01.636+02:00</lastStateChange>
+                <depositorId>PANVU</depositorId>
+                <stateChangeDates>
+                  <damd:stateChangeDate>
+                    <fromState>DRAFT</fromState>
+                    <toState>PUBLISHED</toState>
+                    <changeDate></changeDate>
+                  </damd:stateChangeDate>
+                </stateChangeDates>
+                <groupIds></groupIds>
+                <damd:workflowData version="0.1" />
+              </damd:administrative-md>
+    Amd.toDateOfDeposit(xml) shouldBe Some("2019-04-25")
+  }
+
+  it should "use date lastStateChange if no StateChangeDates ELEMENT is present" in {
+    val xml = <damd:administrative-md xmlns:damd="http://easy.dans.knaw.nl/easy/dataset-administrative-metadata/" version="0.1">
+                <datasetState>PUBLISHED</datasetState>
+                <previousState>DRAFT</previousState>
+                <lastStateChange>2019-04-25T12:20:01.636+02:00</lastStateChange>
+                <depositorId>PANVU</depositorId>
+                <groupIds></groupIds>
+                <damd:workflowData version="0.1" />
+              </damd:administrative-md>
+    Amd.toDateOfDeposit(xml) shouldBe Some("2019-04-25")
+  }
+/////
+  "toPublicationDate" should "use date of first change to PUBLISHEd state" in {
+    val xml =
+    <damd:administrative-md version="0.1" xmlns:damd="http://easy.dans.knaw.nl/easy/dataset-administrative-metadata/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:foxml="info:fedora/fedora-system:def/foxml#">
+      <datasetState>PUBLISHED</datasetState>
+      <previousState>MAINTENANCE</previousState>
+      <depositorId>rutgerelsma</depositorId>
+      <stateChangeDates>
+        <damd:stateChangeDate>
+          <fromState>DRAFT</fromState>
+          <toState>SUBMITTED</toState>
+          <changeDate>2017-04-13T11:03:05.000+02:00</changeDate>
+        </damd:stateChangeDate>
+        <damd:stateChangeDate>
+          <fromState>SUBMITTED</fromState>
+          <toState>DRAFT</toState>
+          <changeDate>2017-04-14T11:03:05.000+02:00</changeDate>
+        </damd:stateChangeDate>
+        <damd:stateChangeDate>
+          <fromState>DRAFT</fromState>
+          <toState>SUBMITTED</toState>
+          <changeDate>2017-04-15T11:03:05.000+02:00</changeDate>
+        </damd:stateChangeDate>
+        <damd:stateChangeDate>
+          <fromState>SUBMITTED</fromState>
+          <toState>PUBLISHED</toState>
+          <changeDate>2017-04-16T14:35:11.281+02:00</changeDate>
+        </damd:stateChangeDate>
+        <damd:stateChangeDate>
+          <fromState>PUBLISHED</fromState>
+          <toState>MAINTENANCE</toState>
+          <changeDate>2017-08-08T16:51:19.886+02:00</changeDate>
+        </damd:stateChangeDate>
+        <damd:stateChangeDate>
+          <fromState>MAINTENANCE</fromState>
+          <toState>PUBLISHED</toState>
+          <changeDate>2017-08-09T16:52:20.914+02:00</changeDate>
+        </damd:stateChangeDate>
+      </stateChangeDates>
+      <groupIds/>
+      <damd:workflowData version="0.1" />
+    </damd:administrative-md>
+
+    Amd.toPublicationDate(xml) shouldBe Some("2017-04-16")
+  }
+
+  it should "use date lastStateChange if no stateChangeDates are available" in {
+    val xml = <damd:administrative-md xmlns:damd="http://easy.dans.knaw.nl/easy/dataset-administrative-metadata/" version="0.1">
+                <datasetState>PUBLISHED</datasetState>
+                <previousState>DRAFT</previousState>
+                <lastStateChange>2019-04-25T12:20:01.636+02:00</lastStateChange>
+                <depositorId>PANVU</depositorId>
+                <stateChangeDates>
+                </stateChangeDates>
+                <groupIds></groupIds>
+                <damd:workflowData version="0.1" />
+              </damd:administrative-md>
+    Amd.toPublicationDate(xml) shouldBe Some("2019-04-25")
+  }
+
+  it should "use date lastStateChange if no NONBLANK stateChangeDates are available" in {
+    val xml = <damd:administrative-md xmlns:damd="http://easy.dans.knaw.nl/easy/dataset-administrative-metadata/" version="0.1">
+                <datasetState>PUBLISHED</datasetState>
+                <previousState>DRAFT</previousState>
+                <lastStateChange>2019-04-25T12:20:01.636+02:00</lastStateChange>
+                <depositorId>PANVU</depositorId>
+                <stateChangeDates>
+                  <damd:stateChangeDate>
+                    <fromState>DRAFT</fromState>
+                    <toState>PUBLISHED</toState>
+                    <changeDate></changeDate>
+                  </damd:stateChangeDate>
+                </stateChangeDates>
+                <groupIds></groupIds>
+                <damd:workflowData version="0.1" />
+              </damd:administrative-md>
+    Amd.toPublicationDate(xml) shouldBe Some("2019-04-25")
+  }
+
+  it should "use date lastStateChange if no StateChangeDates ELEMENT is present" in {
+    val xml = <damd:administrative-md xmlns:damd="http://easy.dans.knaw.nl/easy/dataset-administrative-metadata/" version="0.1">
+                <datasetState>PUBLISHED</datasetState>
+                <previousState>DRAFT</previousState>
+                <lastStateChange>2019-04-25T12:20:01.636+02:00</lastStateChange>
+                <depositorId>PANVU</depositorId>
+                <groupIds></groupIds>
+                <damd:workflowData version="0.1" />
+              </damd:administrative-md>
+    Amd.toPublicationDate(xml) shouldBe Some("2019-04-25")
+  }
+
 }
