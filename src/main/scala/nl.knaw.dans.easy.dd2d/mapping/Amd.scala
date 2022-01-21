@@ -31,7 +31,7 @@ object Amd {
       .filter(sc => (sc \ "toState").text == state)
       .toList
       .map(_ \ "changeDate")
-      .map(_.head) // There can only be one changeDate per change
+      .map(_.headOption.getOrElse((amd \ "lastStateChange").head))
       .map(DateTypeElement.toYearMonthDayFormat)
       .map(_.get)
       .sorted
