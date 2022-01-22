@@ -95,6 +95,19 @@ object DcxDaiAuthor extends Contributor with BlockCitation {
     author.role.contains("RightsHolder")
   }
 
+  def inAnyOfRoles(roles: List[String])(node: Node): Boolean = {
+    val author = parseAuthor(node)
+    roles.exists(author.role.contains)
+  }
+
+  def toGrantNumberValueObject(node: Node): JsonObject = {
+    val m = FieldMap()
+    val author = parseAuthor(node)
+    m.addPrimitiveField(GRANT_NUMBER_AGENCY, formatRightsHolder(author))
+    m.addPrimitiveField(GRANT_NUMBER_VALUE, "")
+    m.toJsonObject
+  }
+
   private def formatName(author: Author): String = {
     List(author.initials.getOrElse(""),
       author.insertions.getOrElse(""),

@@ -15,6 +15,8 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
+import nl.knaw.dans.easy.dd2d.mapping.DcxDaiAuthor.{ GRANT_NUMBER_AGENCY, GRANT_NUMBER_VALUE, formatRightsHolder, parseAuthor }
+
 import scala.xml.Node
 
 object DcxDaiOrganization extends Contributor with BlockCitation {
@@ -45,6 +47,19 @@ object DcxDaiOrganization extends Contributor with BlockCitation {
   def isRightsHolder(node: Node): Boolean = {
     val organization = parseOrganization(node)
     organization.role.contains("RightsHolder")
+  }
+
+  def inAnyOfRoles(roles: List[String])(node: Node): Boolean = {
+    val author = parseOrganization(node)
+    roles.exists(author.role.contains)
+  }
+
+  def toGrantNumberValueObject(node: Node): JsonObject = {
+    val m = FieldMap()
+    val organization = parseOrganization(node)
+    m.addPrimitiveField(GRANT_NUMBER_AGENCY, organization.name.getOrElse(""))
+    m.addPrimitiveField(GRANT_NUMBER_VALUE, "")
+    m.toJsonObject
   }
 
   def toRightsHolder(node: Node): Option[String] = {

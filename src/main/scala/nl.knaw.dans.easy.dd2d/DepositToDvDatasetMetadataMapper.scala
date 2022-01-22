@@ -103,9 +103,17 @@ class DepositToDvDatasetMetadataMapper(deduplicate: Boolean,
       val contributors = ddm \ "dcmiMetadata" \ "contributorDetails"
       contributors.foreach {
         case node if node.label == "contributorDetails" && (node \ "author").nonEmpty =>
-          (node \ "author").filterNot(DcxDaiAuthor isRightsHolder).foreach(author => addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, author, DcxDaiAuthor toContributorValueObject))
+          (node \ "author").filterNot(DcxDaiAuthor inAnyOfRoles(List("RightsHolder", "Funder"))).foreach(author => addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, author, DcxDaiAuthor toContributorValueObject))
         case node if node.label == "contributorDetails" && (node \ "organization").nonEmpty =>
-          (node \ "organization").filterNot(DcxDaiOrganization isRightsHolder).foreach(organization => addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, organization, DcxDaiOrganization toContributorValueObject))
+          (node \ "organization").filterNot(DcxDaiOrganization inAnyOfRoles(List("RightsHolder", "Funder"))).foreach(organization => addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, organization, DcxDaiOrganization toContributorValueObject))
+      }
+
+      // Add contributors with role Funder as Grant Number with only an agency subfield
+      contributors.foreach {
+        case node if node.label == "contributorDetails" && (node \ "author").nonEmpty =>
+          (node \ "author").filter(DcxDaiAuthor inAnyOfRoles(List("Funder"))).foreach(author => addCompoundFieldMultipleValues(citationFields, GRANT_NUMBER, author, DcxDaiAuthor toGrantNumberValueObject))
+        case node if node.label == "contributorDetails" && (node \ "organization").nonEmpty =>
+          (node \ "organization").filter(DcxDaiOrganization inAnyOfRoles(List("Funder"))).foreach(organization => addCompoundFieldMultipleValues(citationFields, GRANT_NUMBER, organization, DcxDaiOrganization toGrantNumberValueObject))
       }
 
       addCompoundFieldMultipleValues(citationFields, DISTRIBUTOR, ddm \ "dcmiMetadata" \ "publisher", Publisher toDistributorValueObject)
