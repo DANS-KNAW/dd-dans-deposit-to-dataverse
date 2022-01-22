@@ -96,6 +96,7 @@ class DepositToDvDatasetMetadataMapper(deduplicate: Boolean,
       addCvFieldMultipleValues(citationFields, SUBJECT, ddm \ "profile" \ "audience", Audience toCitationBlockSubject)
       addCompoundFieldMultipleValues(citationFields, KEYWORD, (ddm \ "dcmiMetadata" \ "subject").filter(Subject hasNoCvAttributes), Subject toKeyWordValue)
       addCompoundFieldMultipleValues(citationFields, KEYWORD, (ddm \ "dcmiMetadata" \ "language").filterNot(Language isIsoLanguage), Language toKeywordValue)
+      addCompoundFieldMultipleValues(citationFields, PUBLICATION, (ddm \ "dcmiMetadata" \ "identifier").filter(Identifier isRelatedPublication), Identifier toRelatedPublicationValue)
       addCvFieldMultipleValues(citationFields, LANGUAGE, ddm \ "dcmiMetadata" \ "language", Language.toCitationBlockLanguage(iso1ToDataverseLanguage, iso2ToDataverseLanguage))
       addPrimitiveFieldSingleValue(citationFields, PRODUCTION_DATE, ddm \ "profile" \ "created", DateTypeElement toYearMonthDayFormat)
 
@@ -115,6 +116,7 @@ class DepositToDvDatasetMetadataMapper(deduplicate: Boolean,
         case node if node.label == "contributorDetails" && (node \ "organization").nonEmpty =>
           (node \ "organization").filter(DcxDaiOrganization inAnyOfRoles(List("Funder"))).foreach(organization => addCompoundFieldMultipleValues(citationFields, GRANT_NUMBER, organization, DcxDaiOrganization toGrantNumberValueObject))
       }
+      addCompoundFieldMultipleValues(citationFields, GRANT_NUMBER, (ddm \ "dcmiMetadata" \ "identifier").filter(Identifier isNwoGrantNumber), Identifier toNwoGrantNumberValue)
 
       addCompoundFieldMultipleValues(citationFields, DISTRIBUTOR, ddm \ "dcmiMetadata" \ "publisher", Publisher toDistributorValueObject)
       addPrimitiveFieldSingleValue(citationFields, DISTRIBUTION_DATE, ddm \ "profile" \ "available", DateTypeElement toYearMonthDayFormat)
@@ -123,9 +125,6 @@ class DepositToDvDatasetMetadataMapper(deduplicate: Boolean,
       // TODO: what to set dateOfDeposit to for SWORD or multi-deposits? Take from deposit.properties?
 
       addPrimitiveFieldMultipleValues(citationFields, DATA_SOURCES, ddm \ "dcmiMetadata" \ "source")
-
-      addCompoundFieldMultipleValues(citationFields, PUBLICATION, (ddm \ "dcmiMetadata" \ "identifier").filter(Identifier isRelatedPublication), Identifier toRelatedPublicationValue)
-      addCompoundFieldMultipleValues(citationFields, GRANT_NUMBER, (ddm \ "dcmiMetadata" \ "identifier").filter(Identifier isNwoGrantNumber), Identifier toNwoGrantNumberValue)
     }
     else {
       throw new IllegalStateException("Metadatablock citation should always be active")
