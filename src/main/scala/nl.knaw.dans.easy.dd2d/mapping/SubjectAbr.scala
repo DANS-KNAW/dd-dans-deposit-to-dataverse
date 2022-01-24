@@ -61,4 +61,8 @@ object SubjectAbr extends BlockArchaeologySpecific with AbrScheme with DebugEnha
   def isAbrArtifact(node: Node): Boolean = {
     node.label == "subject" && hasAttribute(node, "subjectScheme", SCHEME_ABR_ARTIFACT) && hasAttribute(node, "schemeURI", SCHEME_URI_ABR_ARTIFACT)
   }
+
+  def toAbrArtifact(node: Node): Option[String] = {
+    node.attribute("valueURI").flatMap(_.headOption).map(_.text).doIfNone(() => logger.error("Missing valueURI attribute on ddm:subject node"))
+  }
 }

@@ -29,6 +29,6 @@ trait BlockArchaeologySpecific {
   val ABR_VERWERVINGSWIJZE = "dansAbrVerwervingswijze"
 
   val ABR_COMPLEX = "dansAbrComplex"
-
+  val ABR_ARTIFACT = "dansAbrArtifact"
   val ABR_PERIOD = "dansAbrPeriod"
 }

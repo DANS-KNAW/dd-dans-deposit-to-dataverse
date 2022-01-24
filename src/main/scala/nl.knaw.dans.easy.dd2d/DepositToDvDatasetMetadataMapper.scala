@@ -95,6 +95,8 @@ class DepositToDvDatasetMetadataMapper(deduplicate: Boolean,
       checkRequiredField(SUBJECT, ddm \ "profile" \ "audience")
       addCvFieldMultipleValues(citationFields, SUBJECT, ddm \ "profile" \ "audience", Audience toCitationBlockSubject)
       addCompoundFieldMultipleValues(citationFields, KEYWORD, (ddm \ "dcmiMetadata" \ "subject").filter(Subject hasNoCvAttributes), Subject toKeyWordValue)
+      addCompoundFieldMultipleValues(citationFields, KEYWORD, (ddm \ "dcmiMetadata" \ "subject").filter(Subject isPanTerm), Subject toPanKeywordValue)
+      addCompoundFieldMultipleValues(citationFields, KEYWORD, (ddm \ "dcmiMetadata" \ "subject").filter(Subject isAatTerm), Subject toAatKeywordValue)
       addCompoundFieldMultipleValues(citationFields, KEYWORD, (ddm \ "dcmiMetadata" \ "language").filterNot(Language isIsoLanguage), Language toKeywordValue)
       addCvFieldMultipleValues(citationFields, LANGUAGE, ddm \ "dcmiMetadata" \ "language", Language.toCitationBlockLanguage(iso1ToDataverseLanguage, iso2ToDataverseLanguage))
       addPrimitiveFieldSingleValue(citationFields, PRODUCTION_DATE, ddm \ "profile" \ "created", DateTypeElement toYearMonthDayFormat)
@@ -147,6 +149,8 @@ class DepositToDvDatasetMetadataMapper(deduplicate: Boolean,
       addPrimitiveFieldMultipleValues(archaeologySpecificFields, ABR_RAPPORT_NUMMER, ddm \ "dcmiMetadata" \ "reportNumber")
       addPrimitiveFieldMultipleValues(archaeologySpecificFields, ABR_VERWERVINGSWIJZE, (ddm \ "dcmiMetadata" \ "acquisitionMethod").filter(AbrAcquisitionMethod isAbrVerwervingswijze), AbrAcquisitionMethod toVerwervingswijze)
       addPrimitiveFieldMultipleValues(archaeologySpecificFields, ABR_COMPLEX, (ddm \ "dcmiMetadata" \ "subject").filter(SubjectAbr isAbrComplex), SubjectAbr toAbrComplex)
+      addPrimitiveFieldMultipleValues(archaeologySpecificFields, ABR_ARTIFACT, (ddm \ "dcmiMetadata" \ "subject").filter(SubjectAbr isOldAbr), SubjectAbr fromAbrOldToAbrArtifact)
+      addPrimitiveFieldMultipleValues(archaeologySpecificFields, ABR_ARTIFACT, (ddm \ "dcmiMetadata" \ "subject").filter(SubjectAbr isAbrArtifact), SubjectAbr toAbrArtifact)
       addPrimitiveFieldMultipleValues(archaeologySpecificFields, ABR_PERIOD, (ddm \ "dcmiMetadata" \ "temporal").filter(TemporalAbr isAbrPeriod), TemporalAbr toAbrPeriod)
     }
 

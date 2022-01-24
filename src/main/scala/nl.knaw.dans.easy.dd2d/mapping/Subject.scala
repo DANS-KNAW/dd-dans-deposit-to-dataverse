@@ -44,4 +44,20 @@ object Subject extends BlockCitation with UnsupportedSubjectSchemes {
     m.addPrimitiveField(KEYWORD_VOCABULARY_URI, "")
     m.toJsonObject
   }
+
+  def toPanKeywordValue(node: Node): JsonObject = {
+    toKeyWordValue(SCHEME_URI_PAN, SCHEME_PAN)(node)
+  }
+
+  def toAatKeywordValue(node: Node): JsonObject = {
+    toKeyWordValue(SCHEME_URI_AAT, SCHEME_AAT)(node)
+  }
+
+  def toKeyWordValue(schemeURI: String, subjectScheme: String)(node: Node): JsonObject = {
+    val m = FieldMap()
+    m.addPrimitiveField(KEYWORD_VALUE, removeMatchPrefix(node))
+    m.addPrimitiveField(KEYWORD_VOCABULARY, subjectScheme)
+    m.addPrimitiveField(KEYWORD_VOCABULARY_URI, schemeURI)
+    m.toJsonObject
+  }
 }
