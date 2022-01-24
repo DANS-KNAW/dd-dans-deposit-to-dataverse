@@ -16,8 +16,16 @@
 package nl.knaw.dans.easy.dd2d.mapping
 
 trait AbrScheme {
+  val ABR_BASE_URL = "https://data.cultureelerfgoed.nl/term/id/abr"
+
+  val SCHEME_ABR_OLD = "Archeologisch Basis Register"
+  val SCHEME_URI_ABR_OLD = "https://data.cultureelerfgoed.nl/term/id/rn/a4a7933c-e096-4bcf-a921-4f70a78749fe"
+
   val SCHEME_ABR_COMPLEX = "ABR Complextypen"
   val SCHEME_URI_ABR_COMPLEX = "https://data.cultureelerfgoed.nl/term/id/abr/e9546020-4b28-4819-b0c2-29e7c864c5c0"
+
+  val SCHEME_ABR_ARTIFACT = "ABR Artefacten"
+  val SCHEME_URI_ABR_ARTIFACT = "https://data.cultureelerfgoed.nl/term/id/abr/22cbb070-6542-48f0-8afe-7d98d398cc0b"
 
   val SCHEME_ABR_PERIOD = "ABR Periodes"
   val SCHEME_URI_ABR_PERIOD = "https://data.cultureelerfgoed.nl/term/id/abr/9b688754-1315-484b-9c89-8817e87c1e84"

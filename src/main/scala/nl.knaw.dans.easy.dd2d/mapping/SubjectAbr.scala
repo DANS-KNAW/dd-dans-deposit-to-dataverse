@@ -17,6 +17,8 @@ package nl.knaw.dans.easy.dd2d.mapping
 
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
+import java.net.URI
+import java.nio.file.Paths
 import scala.xml.Node
 
 object SubjectAbr extends BlockArchaeologySpecific with AbrScheme with DebugEnhancedLogging {
@@ -35,5 +37,28 @@ object SubjectAbr extends BlockArchaeologySpecific with AbrScheme with DebugEnha
   def isAbrComplex(node: Node): Boolean = {
     // TODO: also take attribute namespace into account (should be ddm)
     node.label == "subject" && hasAttribute(node, "subjectScheme", SCHEME_ABR_COMPLEX) && hasAttribute(node, "schemeURI", SCHEME_URI_ABR_COMPLEX)
+  }
+
+  def fromAbrOldToAbrArtifact(node: Node): Option[String] = {
+    if (isOldAbr(node))
+      node.attribute("valueURI")
+        .flatMap(_.headOption)
+        .map(_.text)
+        .map(makeAbrArtifactTermUriFromLegacyUri)
+        .doIfNone(() => logger.error("Missing valueURI attribute on ddm:subject node"))
+    else None
+  }
+
+  private def makeAbrArtifactTermUriFromLegacyUri(legacyUri: String): String = {
+    val uuid = Paths.get(new URI(legacyUri).getPath).getFileName.toString
+    s"$ABR_BASE_URL/$uuid"
+  }
+
+  def isOldAbr(node: Node): Boolean = {
+    node.label == "subject" && hasAttribute(node, "subjectScheme", SCHEME_ABR_OLD) && hasAttribute(node, "schemeURI", SCHEME_URI_ABR_OLD)
+  }
+
+  def isAbrArtifact(node: Node): Boolean = {
+    node.label == "subject" && hasAttribute(node, "subjectScheme", SCHEME_ABR_ARTIFACT) && hasAttribute(node, "schemeURI", SCHEME_URI_ABR_ARTIFACT)
   }
 }
