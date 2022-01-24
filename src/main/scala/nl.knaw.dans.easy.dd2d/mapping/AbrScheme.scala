@@ -21,6 +21,9 @@ trait AbrScheme {
   val SCHEME_ABR_OLD = "Archeologisch Basis Register"
   val SCHEME_URI_ABR_OLD = "https://data.cultureelerfgoed.nl/term/id/rn/a4a7933c-e096-4bcf-a921-4f70a78749fe"
 
+  val SCHEME_ABR_PLUS = "Archeologisch Basis Register"
+  val SCHEME_URI_ABR_PLUS = "https://data.cultureelerfgoed.nl/term/id/abr/b6df7840-67bf-48bd-aa56-7ee39435d2ed"
+
   val SCHEME_ABR_COMPLEX = "ABR Complextypen"
   val SCHEME_URI_ABR_COMPLEX = "https://data.cultureelerfgoed.nl/term/id/abr/e9546020-4b28-4819-b0c2-29e7c864c5c0"
 

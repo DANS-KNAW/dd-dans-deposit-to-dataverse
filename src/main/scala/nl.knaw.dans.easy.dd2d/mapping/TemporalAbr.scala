@@ -33,7 +33,12 @@ object TemporalAbr extends BlockArchaeologySpecific with AbrScheme with DebugEnh
    */
   def isAbrPeriod(node: Node): Boolean = {
     // TODO: also take attribute namespace into account (should be ddm)
-    // TODO: correct the scheme: should be 'ABR Period' ??
-    node.label == "temporal" && hasAttribute(node, "subjectScheme", SCHEME_ABR_PERIOD) && hasAttribute(node, "schemeURI", SCHEME_URI_ABR_PERIOD)
+    node.label == "temporal" &&
+      /*
+       * Either specify exactly the subtree for periods or just the general ABR+ thesaurus. The latter is supported for PAN. Since the element
+       * is "temporal" it is clear enough that we are dealing with a period anyway.
+       */
+      (hasAttribute(node, "subjectScheme", SCHEME_ABR_PERIOD) && hasAttribute(node, "schemeURI", SCHEME_URI_ABR_PERIOD) ||
+        hasAttribute(node, "subjectScheme", SCHEME_ABR_PLUS) && hasAttribute(node, "schemeURI", SCHEME_URI_ABR_PLUS))
   }
 }
