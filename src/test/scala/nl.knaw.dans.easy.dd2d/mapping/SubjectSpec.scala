@@ -18,7 +18,7 @@ package nl.knaw.dans.easy.dd2d.mapping
 import nl.knaw.dans.easy.dd2d.TestSupportFixture
 import org.json4s.{ DefaultFormats, Formats }
 
-class SubjectSpec extends TestSupportFixture with BlockCitation {
+class SubjectSpec extends TestSupportFixture with BlockCitation with UnsupportedSubjectSchemes {
   private implicit val jsonFormats: Formats = DefaultFormats
 
   "hasNoCvAttributes" should "return false for ABR subjects" in {
@@ -32,4 +32,85 @@ class SubjectSpec extends TestSupportFixture with BlockCitation {
     val node = <ddm:subject>Test</ddm:subject>
     Subject hasNoCvAttributes node shouldBe true
   }
+
+  "isPanTerm" should "return true if both schemeURI and subjectScheme match" in {
+    val xml =
+      <ddm:subject schemeURI={ SCHEME_URI_PAN }
+        subjectScheme={ SCHEME_PAN }
+        valueURI="https://data.cultureelerfgoed.nl/term/id/pan/08-01-01" xml:lang="en">
+        button with solid head and loop-shaped shank</ddm:subject>
+    Subject.isPanTerm(xml) shouldBe true
+  }
+
+  it should "return false if schemeURI does not match" in {
+    val xml =
+      <ddm:subject schemeURI="https://data.cultureelerfgoed.nl/term/id/pan/NOT-PAN"
+        subjectScheme={ SCHEME_PAN }
+        valueURI="https://data.cultureelerfgoed.nl/term/id/pan/08-01-01" xml:lang="en">
+        button with solid head and loop-shaped shank</ddm:subject>
+    Subject.isPanTerm(xml) shouldBe false
+  }
+
+  it should "return false if subjectScheme does not match" in {
+    val xml =
+      <ddm:subject schemeURI={ SCHEME_URI_PAN }
+        subjectScheme="NOT PAN"
+        valueURI="https://data.cultureelerfgoed.nl/term/id/pan/08-01-01" xml:lang="en">
+        button with solid head and loop-shaped shank</ddm:subject>
+    Subject.isPanTerm(xml) shouldBe false
+  }
+
+  "isAatTerm" should "return true if both schemeURI and subjectScheme match" in {
+    val xml =
+      <ddm:subject schemeURI={ SCHEME_URI_AAT }
+        subjectScheme={ SCHEME_AAT }
+        valueURI="http://vocab.getty.edu/aat/300239261" xml:lang="en">
+        Broader Match: buttons (fasteners)</ddm:subject>
+    Subject.isAatTerm(xml) shouldBe true
+  }
+
+  it should "return false if schemeURI does not match" in {
+    val xml =
+      <ddm:subject schemeURI="http://vocab.getty.edu/NOT-AAT/"
+        subjectScheme={ SCHEME_AAT }
+        valueURI="http://vocab.getty.edu/aat/300239261" xml:lang="en">
+        Broader Match: buttons (fasteners)</ddm:subject>
+    Subject.isAatTerm(xml) shouldBe false
+  }
+
+  it should "return false if subjectScheme does not match" in {
+    val xml =
+      <ddm:subject schemeURI={ SCHEME_URI_AAT }
+        subjectScheme="NOT AAT"
+        valueURI="http://vocab.getty.edu/aat/300239261" xml:lang="en">
+        Broader Match: buttons (fasteners)</ddm:subject>
+    Subject.isAatTerm(xml) shouldBe false
+  }
+
+  "removeMatchPrefix" should "remove Broader Match: before a term" in {
+    val xml =
+      <ddm:subject schemeURI={ SCHEME_URI_AAT }
+        subjectScheme={ SCHEME_AAT }
+        valueURI="http://vocab.getty.edu/aat/300239261" xml:lang="en">Broader Match: buttons (fasteners)</ddm:subject>
+    Subject.removeMatchPrefix(xml) shouldBe "buttons (fasteners)"
+  }
+
+  it should "remove Close Match: before a term" in {
+    val xml =
+      <ddm:subject schemeURI={ SCHEME_URI_AAT }
+        subjectScheme={ SCHEME_AAT }
+        valueURI="http://vocab.getty.edu/aat/300239261" xml:lang="en">Close Match: buttons (fasteners)</ddm:subject>
+    Subject.removeMatchPrefix(xml) shouldBe "buttons (fasteners)"
+  }
+
+  it should "term unchanged if it has no prefix" in {
+    val xml =
+      <ddm:subject schemeURI={ SCHEME_URI_AAT }
+        subjectScheme={ SCHEME_AAT }
+        valueURI="http://vocab.getty.edu/aat/300239261" xml:lang="en">buttons (fasteners)</ddm:subject>
+    Subject.removeMatchPrefix(xml) shouldBe "buttons (fasteners)"
+  }
+
+
+
 }

@@ -15,12 +15,26 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
+import scala.language.postfixOps
 import scala.xml.Node
 
-object Subject extends BlockCitation {
+object Subject extends BlockCitation with UnsupportedSubjectSchemes {
+  private val matchPrefix = """^\s*[a-zA-Z]+\s+Match:\s*"""r
 
   def hasNoCvAttributes(node: Node): Boolean = {
     node.attribute("subjectScheme").isEmpty && node.attribute("schemeURI").isEmpty
+  }
+
+  def isPanTerm(node: Node): Boolean = {
+    node.label == "subject" && hasAttribute(node, "subjectScheme", SCHEME_PAN) && hasAttribute(node, "schemeURI", SCHEME_URI_PAN)
+  }
+
+  def isAatTerm(node: Node): Boolean = {
+    node.label == "subject" && hasAttribute(node, "subjectScheme", SCHEME_AAT) && hasAttribute(node, "schemeURI", SCHEME_URI_AAT)
+  }
+
+  def removeMatchPrefix(n: Node): String = {
+    matchPrefix.replaceAllIn(n.text, "")
   }
 
   def toKeyWordValue(node: Node): JsonObject = {
