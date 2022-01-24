@@ -15,12 +15,26 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
+import scala.language.postfixOps
 import scala.xml.Node
 
-object Subject extends BlockCitation {
+object Subject extends BlockCitation with UnsupportedSubjectSchemes {
+  private val matchPrefix = """^\s*[a-zA-Z]+\s+Match:\s*"""r
 
   def hasNoCvAttributes(node: Node): Boolean = {
     node.attribute("subjectScheme").isEmpty && node.attribute("schemeURI").isEmpty
+  }
+
+  def isPanTerm(node: Node): Boolean = {
+    node.label == "subject" && hasAttribute(node, "subjectScheme", SCHEME_PAN) && hasAttribute(node, "schemeURI", SCHEME_URI_PAN)
+  }
+
+  def isAatTerm(node: Node): Boolean = {
+    node.label == "subject" && hasAttribute(node, "subjectScheme", SCHEME_AAT) && hasAttribute(node, "schemeURI", SCHEME_URI_AAT)
+  }
+
+  def removeMatchPrefix(n: Node): String = {
+    matchPrefix.replaceAllIn(n.text, "")
   }
 
   def toKeyWordValue(node: Node): JsonObject = {
@@ -28,6 +42,22 @@ object Subject extends BlockCitation {
     m.addPrimitiveField(KEYWORD_VALUE, node.text)
     m.addPrimitiveField(KEYWORD_VOCABULARY, "")
     m.addPrimitiveField(KEYWORD_VOCABULARY_URI, "")
+    m.toJsonObject
+  }
+
+  def toPanKeywordValue(node: Node): JsonObject = {
+    toKeyWordValue(SCHEME_URI_PAN, SCHEME_PAN)(node)
+  }
+
+  def toAatKeywordValue(node: Node): JsonObject = {
+    toKeyWordValue(SCHEME_URI_AAT, SCHEME_AAT)(node)
+  }
+
+  def toKeyWordValue(schemeURI: String, subjectScheme: String)(node: Node): JsonObject = {
+    val m = FieldMap()
+    m.addPrimitiveField(KEYWORD_VALUE, removeMatchPrefix(node))
+    m.addPrimitiveField(KEYWORD_VOCABULARY, subjectScheme)
+    m.addPrimitiveField(KEYWORD_VOCABULARY_URI, schemeURI)
     m.toJsonObject
   }
 }

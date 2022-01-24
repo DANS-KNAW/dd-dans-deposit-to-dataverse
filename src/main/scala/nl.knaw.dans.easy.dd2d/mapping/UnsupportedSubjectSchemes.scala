@@ -15,20 +15,11 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-trait BlockArchaeologySpecific {
-  val ARCHIS_ZAAK_ID = "dansArchisZaakId"
+trait UnsupportedSubjectSchemes {
+  val SCHEME_PAN = "PAN thesaurus ideaaltypes"
+  val SCHEME_URI_PAN = "https://data.cultureelerfgoed.nl/term/id/pan/PAN"
 
-  val ARCHIS_NUMBER = "dansArchisNumber"
-  val ARCHIS_NUMBER_TYPE = "dansArchisNumberType"
-  val ARCHIS_NUMBER_ID = "dansArchisNumberId"
+  val SCHEME_AAT = "Art and Architecture Thesaurus"
+  val SCHEME_URI_AAT = "http://vocab.getty.edu/aat/"
 
-  val ABR_RAPPORT_TYPE = "dansAbrRapportType"
-
-  val ABR_RAPPORT_NUMMER = "dansAbrRapportNummer"
-
-  val ABR_VERWERVINGSWIJZE = "dansAbrVerwervingswijze"
-
-  val ABR_COMPLEX = "dansAbrComplex"
-  val ABR_ARTIFACT = "dansAbrArtifact"
-  val ABR_PERIOD = "dansAbrPeriod"
 }
