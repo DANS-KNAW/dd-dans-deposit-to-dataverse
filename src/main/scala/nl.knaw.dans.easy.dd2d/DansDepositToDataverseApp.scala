@@ -39,6 +39,7 @@ class DansDepositToDataverseApp(configuration: Configuration, prestagedFiles: Bo
       new DepositIngestTaskFactory(
         isMigrated = false,
         configuration.optFileExclusionPattern,
+        configuration.zipFileHandler,
         configuration.depositorRole,
         configuration.deduplicateService,
         configuration.deduplicateImport,
@@ -80,6 +81,7 @@ class DansDepositToDataverseApp(configuration: Configuration, prestagedFiles: Bo
         new DepositIngestTaskFactory(
           isMigrated = true,
           configuration.optFileExclusionPattern,
+          configuration.zipFileHandler,
           configuration.depositorRole,
           configuration.deduplicateService,
           configuration.deduplicateImport,
@@ -109,6 +111,7 @@ class DansDepositToDataverseApp(configuration: Configuration, prestagedFiles: Bo
         new DepositIngestTaskFactory(
           isMigrated = true,
           configuration.optFileExclusionPattern,
+          configuration.zipFileHandler,
           configuration.depositorRole,
           configuration.deduplicateService,
           configuration.deduplicateImport,

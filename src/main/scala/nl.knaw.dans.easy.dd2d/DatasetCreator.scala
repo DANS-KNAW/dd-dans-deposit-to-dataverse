@@ -30,13 +30,14 @@ import scala.util.{ Failure, Success, Try }
 
 class DatasetCreator(deposit: Deposit,
                      optFileExclusionPattern: Option[Pattern],
+                     zipFileHandler: ZipFileHandler,
                      depositorRole: String,
                      isMigration: Boolean = false,
                      dataverseDataset: Dataset,
                      variantToLicense: Map[String, String],
                      supportedLicenses: List[URI],
                      instance: DataverseInstance,
-                     optMigrationInfoService: Option[MigrationInfo]) extends DatasetEditor(instance, optFileExclusionPattern) with DebugEnhancedLogging {
+                     optMigrationInfoService: Option[MigrationInfo]) extends DatasetEditor(instance, optFileExclusionPattern, zipFileHandler) with DebugEnhancedLogging {
   trace(deposit)
 
   override def performEdit(): Try[PersistentId] = {

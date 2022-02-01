@@ -24,3 +24,7 @@ echo -n "Creating inbox..."
 INBOX=data/inbox
 mkdir $INBOX
 echo "OK"
+
+echo -n "Creating tmp..."
+mkdir data/tmp
+echo "OK"

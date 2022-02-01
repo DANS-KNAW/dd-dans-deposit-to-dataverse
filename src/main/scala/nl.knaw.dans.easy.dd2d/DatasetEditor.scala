@@ -34,7 +34,7 @@ import scala.util.{ Failure, Success, Try }
 /**
  * Object that edits a dataset, a new draft.
  */
-abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPattern: Option[Pattern]) extends DebugEnhancedLogging {
+abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPattern: Option[Pattern], zipFileHandler: ZipFileHandler) extends DebugEnhancedLogging {
   type PersistentId = String
   type DatasetId = Int
 
@@ -64,7 +64,13 @@ abstract class DatasetEditor(instance: DataverseInstance, optFileExclusionPatter
         instance.dataset(doi).addPrestagedFile(prestagedFile)
       }.getOrElse {
         debug(s"Uploading file: $fileInfo")
-        instance.dataset(doi).addFile(Option(fileInfo.file), Option(fileInfo.metadata))
+        val optWrappedZip = zipFileHandler
+          .wrapIfZipFile(fileInfo.file)
+        val r = instance.dataset(doi).addFile(Option(
+          optWrappedZip
+            .getOrElse(fileInfo.file)), Option(fileInfo.metadata))
+        optWrappedZip.foreach(_.delete(swallowIOExceptions = true))
+        r
       }
       files <- r.data
       id = files.files.headOption.flatMap(_.dataFile.map(_.id))
