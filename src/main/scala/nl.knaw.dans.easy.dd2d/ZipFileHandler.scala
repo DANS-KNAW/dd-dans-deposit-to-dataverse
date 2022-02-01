@@ -17,18 +17,33 @@ package nl.knaw.dans.easy.dd2d
 
 import better.files.File
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
+import org.apache.tika.Tika
 
 import java.util.zip.Deflater
 
 class ZipFileHandler(tempDir: File) extends DebugEnhancedLogging {
+  private val tika = new Tika()
+  /*
+   * The file types that Dataverse wants unpackage or repackage.
+   */
+  private val needToBeZipWrapped = List(
+    "application/zip",
+    "application/zipped-shapefile",
+    "application/fits-gzipped"
+  )
 
   def wrapIfZipFile(file: File): Option[File] = {
-    if (file.name.toLowerCase.endsWith(".zip")) {
+    if (needsToBeWrapped(file)) {
       logger.info("ZIP file found: {}. Creating ZIP-wrapper around it...", file)
       val wrapper = file.zipTo(File.newTemporaryFile("zip-wrapped-", ".zip", Some(tempDir)), Deflater.NO_COMPRESSION)
       logger.info("Wrapper created at {}", wrapper)
       Option(wrapper)
     }
     else Option.empty
+  }
+
+  private def needsToBeWrapped(file: File): Boolean = {
+    file.name.toLowerCase.endsWith(".zip") ||
+      needToBeZipWrapped.contains(tika.detect(file.toJava))
   }
 }
