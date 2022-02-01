@@ -35,7 +35,7 @@ class ZipFileHandler(tempDir: File) extends DebugEnhancedLogging {
   def wrapIfZipFile(file: File): Option[File] = {
     if (needsToBeWrapped(file)) {
       logger.info("ZIP file found: {}. Creating ZIP-wrapper around it...", file)
-      val wrapper = file.zipTo(File.newTemporaryFile("zip-wrapped-", ".zip", Some(tempDir)), Deflater.NO_COMPRESSION)
+      val wrapper = file.zipTo(File.newTemporaryFile(s"zip-wrapped-${file.name}-", ".zip", Some(tempDir)), Deflater.NO_COMPRESSION)
       logger.info("Wrapper created at {}", wrapper)
       Option(wrapper)
     }
