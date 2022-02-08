@@ -67,14 +67,14 @@ class DepositSorter extends TaskSorter[Deposit] with DebugEnhancedLogging {
         .filter(_.isVersionOf.isDefined)
         .groupBy(_.isVersionOf.get)
 
-    val laterVersionsUpdated = removeDatasetsWithoutFirstVersion(firstVersions, laterVersions)
-
-    (firstVersions.keySet ++ laterVersionsUpdated.keySet)
+    (firstVersions.keySet ++ laterVersions.keySet)
       .map(k => {
-        if (laterVersionsUpdated.contains(k))
-          k -> (firstVersions(k) ++ laterVersionsUpdated(k))
-        else
-          k -> firstVersions(k)
+        if (firstVersions.contains(k) && laterVersions.contains(k))
+          k -> (firstVersions(k) ++ laterVersions(k))
+        else if (firstVersions.contains(k))
+               k -> firstVersions(k)
+             else
+               k -> laterVersions(k)
       })
       .toMap
   }
@@ -84,13 +84,6 @@ class DepositSorter extends TaskSorter[Deposit] with DebugEnhancedLogging {
       .flatMap(_._2)
       .map(_.depositTask)
       .toList
-  }
-
-  private def removeDatasetsWithoutFirstVersion(firstVersions: baseIdToAllVersions, laterVersions: baseIdToAllVersions): baseIdToAllVersions = {
-    val datasetsWithoutFirstVersions = laterVersions.filterNot(k => firstVersions.contains(k._1))
-    datasetsWithoutFirstVersions.foreach(v => logger.error(s"No first version was found for dataset ${ v._1 }. The dataset was not imported into Dataverse"))
-    val correctVersions = for (k <- laterVersions if firstVersions.keySet.contains(k._1)) yield k
-    correctVersions
   }
 
   private def parseTimestamp(timestampString: String): LocalDateTime = {
