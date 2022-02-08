@@ -3,16 +3,19 @@
 BINPATH=`readlink -f $0`
 APPHOME=`dirname \`dirname $BINPATH \``
 MODULE=`basename $APPHOME`
-LOGBACK_HOME=$HOME/logback-dd-dans-deposit-to-dataverse.xml
-LOGBACK_RPM=/etc/opt/dans.knaw.nl/$MODULE/logback.xml
-LOGBACK_APPHOME=$APPHOME/cfg/logback.xml
 
-if [ -f $LOGBACK_HOME ]; then
-    LOGBACK_CFG=$LOGBACK_HOME
-elif [ -f $LOGBACK_RPM ]; then
-    LOGBACK_CFG=$LOGBACK_RPM
-else
-    LOGBACK_CFG=$LOGBACK_APPHOME
+if [ -z "$LOGBACK_CFG" ]; then
+  LOGBACK_HOME=$HOME/logback-dd-dans-deposit-to-dataverse.xml
+  LOGBACK_RPM=/etc/opt/dans.knaw.nl/$MODULE/logback.xml
+  LOGBACK_APPHOME=$APPHOME/cfg/logback.xml
+
+  if [ -f $LOGBACK_HOME ]; then
+      LOGBACK_CFG=$LOGBACK_HOME
+  elif [ -f $LOGBACK_RPM ]; then
+      LOGBACK_CFG=$LOGBACK_RPM
+  else
+      LOGBACK_CFG=$LOGBACK_APPHOME
+  fi
 fi
 
 LC_ALL=en_US.UTF-8 \
