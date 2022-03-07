@@ -43,4 +43,13 @@ class DatesOfCollectionSpec extends TestSupportFixture with BlockCitation {
     findString(result, s"$DATE_OF_COLLECTION_END.value") shouldBe ""
   }
 
+  it should "handle whitespace at beginnen and end of text" in {
+    val datesOfCollection = <ddm:datesOfCollection>
+      2022-01-01/2022-02-01
+    </ddm:datesOfCollection>
+    val result = Serialization.writePretty(DatesOfCollection.toDateOfCollectionValue(datesOfCollection))
+    findString(result, s"$DATE_OF_COLLECTION_START.value") shouldBe "2022-01-01"
+    findString(result, s"$DATE_OF_COLLECTION_END.value") shouldBe "2022-02-01"
+  }
+
 }

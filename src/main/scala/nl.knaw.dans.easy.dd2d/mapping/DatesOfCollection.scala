@@ -24,7 +24,7 @@ object DatesOfCollection extends BlockCitation with DebugEnhancedLogging {
 
   def toDateOfCollectionValue(node: Node): JsonObject = {
     val m = FieldMap()
-    val matchIterator = rangePattern.findAllIn(node.text)
+    val matchIterator = rangePattern.findAllIn(node.text.trim)
     m.addPrimitiveField(DATE_OF_COLLECTION_START, matchIterator.group(DATE_OF_COLLECTION_START))
     m.addPrimitiveField(DATE_OF_COLLECTION_END, matchIterator.group(DATE_OF_COLLECTION_END))
     m.toJsonObject
