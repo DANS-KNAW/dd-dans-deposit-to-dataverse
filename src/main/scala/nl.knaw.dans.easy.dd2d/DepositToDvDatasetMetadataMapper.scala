@@ -116,6 +116,8 @@ class DepositToDvDatasetMetadataMapper(deduplicate: Boolean,
       addPrimitiveFieldSingleValue(citationFields, DATE_OF_DEPOSIT, optDateOfDeposit)
       // TODO: what to set dateOfDeposit to for SWORD or multi-deposits? Take from deposit.properties?
 
+      addCompoundFieldMultipleValues(citationFields, DATE_OF_COLLECTION, ddm \ "dcmiMetadata" \ "datesOfCollection", DatesOfCollection.toDateOfCollectionValue)
+
       addPrimitiveFieldMultipleValues(citationFields, DATA_SOURCES, ddm \ "dcmiMetadata" \ "source")
 
       addCompoundFieldMultipleValues(citationFields, PUBLICATION, (ddm \ "dcmiMetadata" \ "identifier").filter(Identifier isRelatedPublication), Identifier toRelatedPublicationValue)
